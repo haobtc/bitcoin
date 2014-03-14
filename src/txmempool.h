@@ -117,6 +117,7 @@ public:
      */
     double GetPriority(unsigned int currentHeight) const;
     const CAmount& GetFee() const { return nFee; }
+    const CAmount& GetInputValue() const { return inChainInputValue; }
     size_t GetTxSize() const { return nTxSize; }
     int64_t GetTime() const { return nTime; }
     unsigned int GetHeight() const { return entryHeight; }
@@ -414,6 +415,8 @@ private:
 
     void trackPackageRemoved(const CFeeRate& rate);
 
+    void writeEntry(CAutoFile& file, const uint256& txid, std::set<uint256>& alreadyWritten) const;
+
 public:
 
     static const int ROLLING_FEE_HALFLIFE = 60 * 60 * 12; // public only for testing
@@ -626,6 +629,13 @@ public:
 
     size_t DynamicMemoryUsage() const;
 
+    // Save to mempool.dat:
+    bool Write() const;
+    // Read from mempool.dat, return entries; does
+    // not automatically add them to the pool,
+    // because they might no longer be valid.
+    bool Read(std::list<CTxMemPoolEntry>& entries) const; 
+
 private:
     /** UpdateForDescendants is used by UpdateTransactionsFromBlock to update
      *  the descendants for a single transaction that has been added to the
@@ -663,6 +673,7 @@ private:
      *  removal.
      */
     void removeUnchecked(txiter entry);
+
 };
 
 /** 

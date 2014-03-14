@@ -43,6 +43,7 @@
 #endif
 #include <stdint.h>
 #include <stdio.h>
+#include <list>
 
 #ifndef WIN32
 #include <signal.h>
@@ -209,6 +210,9 @@ void Shutdown()
             LogPrintf("%s: Failed to write fee estimates to %s\n", __func__, est_path.string());
         fFeeEstimatesInitialized = false;
     }
+
+    if (GetArg("-savemempool", true))
+        mempool.Write();
 
     {
         LOCK(cs_main);
@@ -493,6 +497,7 @@ std::string HelpMessage(HelpMessageMode mode)
     strUsage += "  -dbuser=<username>\n";
     strUsage += "  -dbpass=<password>\n";
     strUsage += "  -deleteallutx=<true>\n";
+    strUsage += "  -savemempool=<true>\n";
     return strUsage;
 }
 
@@ -1384,6 +1389,24 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
     if (!est_filein.IsNull())
         mempool.ReadFeeEstimates(est_filein);
     fFeeEstimatesInitialized = true;
+
+    if (GetArg("-savemempool", true)) {
+        // It is OK if mempool.Read() fails; starting out with an empty memory pool is not
+        // a problem, it gets filled quickly.
+        list<CTxMemPoolEntry> mempoolEntries;
+        if (mempool.Read(mempoolEntries) && !(mempoolEntries.empty()))
+        {
+            CValidationState valState;
+            bool fMissingInputs;
+            BOOST_FOREACH(CTxMemPoolEntry& mempoolEntry, mempoolEntries)
+            {
+                AcceptToMemoryPool(mempool, valState, mempoolEntry.GetTx(), false,
+                                   &fMissingInputs, false);
+            }
+            LogPrintf("Accepted %lu mempool transactions\n", mempool.size());
+        }
+    }
+
 
     // ********************************************************* Step 8: load wallet
 #ifdef ENABLE_WALLET
