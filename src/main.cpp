@@ -1251,6 +1251,7 @@ CAmount GetBlockValue(int nHeight, const CAmount& nFees)
 
 bool IsInitialBlockDownload()
 {
+    const CChainParams& chainParams = Params();
     LOCK(cs_main);
     if (fImporting || fReindex || chainActive.Height() < Checkpoints::GetTotalBlocksEstimate())
         return true;
@@ -1258,7 +1259,7 @@ bool IsInitialBlockDownload()
     if (lockIBDState)
         return false;
     bool state = (chainActive.Height() < pindexBestHeader->nHeight - 24 * 6 ||
-            pindexBestHeader->GetBlockTime() < GetTime() - 24 * 60 * 60);
+            pindexBestHeader->GetBlockTime() < GetTime() - chainParams.MaxTipAge());
     if (!state)
         lockIBDState = true;
     return state;
