@@ -694,6 +694,9 @@ else
   AC_CHECK_HEADER([openssl/ssl.h],, AC_MSG_ERROR(libssl headers missing),)
   AC_CHECK_LIB([ssl],         [main],SSL_LIBS=-lssl, AC_MSG_ERROR(libssl missing))
 
+  AC_CHECK_HEADER([postgresql/libpq-fe.h],, AC_MSG_ERROR(libpq headers missing),)
+  AC_CHECK_LIB([pq],          [PQexec],PQ_LIBS=-lpq, AC_MSG_ERROR(libpq missing))
+
   BITCOIN_QT_CHECK(AC_CHECK_LIB([protobuf] ,[main],[PROTOBUF_LIBS=-lprotobuf], BITCOIN_QT_FAIL(libprotobuf not found)))
   if test x$use_qr != xno; then
     BITCOIN_QT_CHECK([AC_CHECK_LIB([qrencode], [main],[QR_LIBS=-lqrencode], [have_qrencode=no])])
@@ -704,7 +707,7 @@ fi
 CFLAGS_TEMP="$CFLAGS"
 LIBS_TEMP="$LIBS"
 CFLAGS="$CFLAGS $SSL_CFLAGS $CRYPTO_CFLAGS"
-LIBS="$LIBS $SSL_LIBS $CRYPTO_LIBS"
+LIBS="$LIBS $SSL_LIBS $CRYPTO_LIBS $PQ_LIBS" 
 AC_CHECK_HEADER([openssl/ec.h],, AC_MSG_ERROR(OpenSSL ec header missing),)
 CFLAGS="$CFLAGS_TEMP"
 LIBS="$LIBS_TEMP"

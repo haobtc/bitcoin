@@ -43,6 +43,8 @@
 #include <boost/thread.hpp>
 #include <openssl/crypto.h>
 
+#include "dblayer.h"
+
 using namespace boost;
 using namespace std;
 
@@ -195,6 +197,8 @@ void Shutdown()
     delete pwalletMain;
     pwalletMain = NULL;
 #endif
+
+    dbClose();
     LogPrintf("%s: done\n", __func__);
 }
 
@@ -854,6 +858,8 @@ bool AppInit2(boost::thread_group& threadGroup)
     } // (!fDisableWallet)
 #endif // ENABLE_WALLET
     // ********************************************************* Step 6: network initialization
+
+    dbOpen();
 
     RegisterNodeSignals(GetNodeSignals());
 

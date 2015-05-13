@@ -185,6 +185,8 @@ libbitcoin_server_a_SOURCES = \
   timedata.cpp \
   txdb.cpp \
   txmempool.cpp \
+  dblayer.cpp \
+  postgres.cpp \
   $(JSON_H) \
   $(BITCOIN_CORE_H)
 
