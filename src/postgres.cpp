@@ -96,6 +96,27 @@ typedef struct timeval tv_t;
     "insert into addr_txout (addr_id, txout_id) \
     values($1,$2)"
 
+#define DEFAULT_SAVE_UTX\
+    "insert into ttx (hash, version, lock_time, coinbase, tx_size, nhash) \
+    values($1::bytea,$2,$3,$4::boolean,$5,$6::bytea)  RETURNING id"
+
+#define DEFAULT_SAVE_UTXIN\
+    "insert into utxin (tx_id, tx_idx, prev_out_index, sequence, script_sig, prev_out, p2sh_type) \
+    values($1,$2,$3,$4,$5::bytea,$6::bytea, $7)  RETURNING id"
+
+#define DEFAULT_SAVE_UTXOUT\
+    "insert into utxout (tx_id, tx_idx, pk_script, value, type) \
+    values($1,$2,$3::bytea,$4,$5) RETURNING id"
+
+#define DEFAULT_SAVE_UADDR\
+    "insert into uaddr (hash160, type) \
+    values($1::bytea,$2) RETURNING id"
+
+#define DEFAULT_SAVE_UADDR_OUT\
+    "insert into uaddr_txout (addr_id, txout_id) \
+    values($1,$2)"
+
+
 extern struct DBSERVER dbSrv;
 
 char *data_to_buf(enum data_type typ, void *data, char *buf, size_t siz)
@@ -625,6 +646,9 @@ int pg_save_addr(const char * addr, int addr_type)
         return -1;
     res = PQexecParams((PGconn*)dbSrv.db_conn, DEFAULT_SAVE_ADDR, i, NULL, paramvalues, NULL, NULL, false);
 
+    for (n = 0; n < i; n++)
+        free((char *)paramvalues[n]);
+
     rescode = PQresultStatus(res);
     if (!PGOK(rescode)) {
         printf( "pg_save_blk failed: %s", PQerrorMessage((const PGconn*)dbSrv.db_conn));
@@ -648,6 +672,7 @@ int pg_save_addr_out(int addr_id, int txout_id)
     PGresult *res;
     ExecStatusType rescode;
     int i=0;
+    int n=0;
     const char *paramvalues[2];
 
     /* PG does a fine job with timestamps so we won't bother. */
@@ -658,6 +683,211 @@ int pg_save_addr_out(int addr_id, int txout_id)
     if (!pg_conncheck())
         return -1;
     res = PQexecParams((PGconn*)dbSrv.db_conn, DEFAULT_SAVE_ADDR_OUT, i, NULL, paramvalues, NULL, NULL, false);
+
+    for (n = 0; n < i; n++)
+        free((char *)paramvalues[n]);
+
+    rescode = PQresultStatus(res);
+    PQclear(res);
+    if (!PGOK(rescode)) {
+        printf( "pg_save_addr_out failed: %s", PQerrorMessage((const PGconn*)dbSrv.db_conn));
+        goto rollback;
+    }
+
+    return 0;
+
+rollback:
+    res = PQexec((PGconn*)dbSrv.db_conn, "Rollback");
+    PQclear(res); 
+    return -1;
+}
+
+
+int pg_save_utx(unsigned char * hash, int version, int lock_time, bool coinbase, int tx_size, unsigned char * nhash)
+{
+    PGresult *res;
+    ExecStatusType rescode;
+    int i = 0;
+    int n =0;
+    int id=0;
+    const char *paramvalues[6];
+
+    /* PG does a fine job with timestamps so we won't bother. */
+
+    paramvalues[i++] = data_to_buf(TYPE_BYTEA, (void *)(hash), NULL, 0);
+    paramvalues[i++] = data_to_buf(TYPE_INT, (void *)(&version), NULL, 0);
+    paramvalues[i++] = data_to_buf(TYPE_INT, (void *)(&lock_time), NULL, 0);
+    paramvalues[i++] = data_to_buf(TYPE_BOOL, (void *)(&coinbase), NULL, 0);
+    paramvalues[i++] = data_to_buf(TYPE_INT, (void *)(&tx_size), NULL, 0);
+    paramvalues[i++] = data_to_buf(TYPE_BYTEA, (void *)(nhash), NULL, 0);
+
+    if (!pg_conncheck())
+        return -1;
+    res = PQexecParams((PGconn*)dbSrv.db_conn, DEFAULT_SAVE_UTX, i, NULL, paramvalues, NULL, NULL, false);
+
+    for (n = 0; n < i; n++)
+        free((char *)paramvalues[n]);
+
+    rescode = PQresultStatus(res);
+
+    if (!PGOK(rescode)) {
+        printf( "pg_save_tx failed: %s", PQerrorMessage((const PGconn*)dbSrv.db_conn));
+        goto rollback;
+    }
+
+    id = atoi(PQgetvalue(res, 0, 0));
+    PQclear(res);
+
+    return id;
+
+rollback:
+    res = PQexec((PGconn*)dbSrv.db_conn, "Rollback");
+    PQclear(res); 
+    return -1;
+}
+
+int pg_save_utxin(int tx_id, int tx_idx, int prev_out_index, int sequence, const unsigned char *script_sig, const unsigned char *prev_out, int p2sh_type)
+{
+    PGresult *res;
+    ExecStatusType rescode;
+    int i=0;
+    int n =0;
+    int id=0;
+    const char *paramvalues[7];
+
+    /* PG does a fine job with timestamps so we won't bother. */
+
+    paramvalues[i++] = data_to_buf(TYPE_INT, (void *)(&tx_id), NULL, 0);
+    paramvalues[i++] = data_to_buf(TYPE_INT, (void *)(&tx_idx), NULL, 0);
+    paramvalues[i++] = data_to_buf(TYPE_INT, (void *)(&prev_out_index), NULL, 0);
+    paramvalues[i++] = data_to_buf(TYPE_INT, (void *)(&sequence), NULL, 0);
+    paramvalues[i++] = data_to_buf(TYPE_BYTEA, (void *)(script_sig), NULL, 0);
+    paramvalues[i++] = data_to_buf(TYPE_BYTEA, (void *)(prev_out), NULL, 0);
+    paramvalues[i++] = data_to_buf(TYPE_INT, (void *)(&p2sh_type), NULL, 0);
+
+    if (!pg_conncheck())
+        return -1;
+    res = PQexecParams((PGconn*)dbSrv.db_conn, DEFAULT_SAVE_UTXIN, i, NULL, paramvalues, NULL, NULL, false);
+
+    for (n = 0; n < i; n++)
+        free((char *)paramvalues[n]);
+    
+    rescode = PQresultStatus(res);
+    if (!PGOK(rescode)) {
+        printf( "pg_save_txin failed: %s", PQerrorMessage((const PGconn*)dbSrv.db_conn));
+        goto rollback;
+    }
+
+    id = atoi(PQgetvalue(res, 0, 0));
+    PQclear(res);
+
+    return id;
+
+rollback:
+    res = PQexec((PGconn*)dbSrv.db_conn, "Rollback");
+    PQclear(res); 
+    return -1;
+}
+
+int pg_save_utxout (int tx_id, int idx, const unsigned char * scriptPubKey, long long nValue, int txout_type)
+{
+     PGresult *res;
+    ExecStatusType rescode;
+    int i=0;
+    int n =0;
+    int id=0;
+    const char *paramvalues[5];
+
+    /* PG does a fine job with timestamps so we won't bother. */
+
+    paramvalues[i++] = data_to_buf(TYPE_INT, (void *)(&tx_id), NULL, 0);
+    paramvalues[i++] = data_to_buf(TYPE_INT, (void *)(&idx), NULL, 0);
+    paramvalues[i++] = data_to_buf(TYPE_BYTEA, (void *)(scriptPubKey), NULL, 0);
+    paramvalues[i++] = data_to_buf(TYPE_BIGINT, (void *)(&nValue), NULL, 0);
+    paramvalues[i++] = data_to_buf(TYPE_INT, (void *)(&txout_type), NULL, 0);
+
+    if (!pg_conncheck())
+        return -1;
+    res = PQexecParams((PGconn*)dbSrv.db_conn, DEFAULT_SAVE_UTXOUT, i, NULL, paramvalues, NULL, NULL, false);
+
+    for (n = 0; n < i; n++)
+        free((char *)paramvalues[n]);
+ 
+    rescode = PQresultStatus(res);
+    if (!PGOK(rescode)) {
+        printf( "pg_save_blk failed: %s", PQerrorMessage((const PGconn*)dbSrv.db_conn));
+        goto rollback;
+    }
+
+    id = atoi(PQgetvalue(res, 0, 0));
+    PQclear(res);
+
+    return id;
+
+rollback:
+    res = PQexec((PGconn*)dbSrv.db_conn, "Rollback");
+    PQclear(res); 
+    return -1;
+}
+
+int pg_save_uaddr(const char * addr, int addr_type)
+{
+    PGresult *res;
+    ExecStatusType rescode;
+    int i=0;
+    int n =0;
+    int id=0;
+    const char *paramvalues[2];
+
+    /* PG does a fine job with timestamps so we won't bother. */
+
+    paramvalues[i++] = data_to_buf(TYPE_BYTEA, (void *)(addr), NULL, 0);
+    paramvalues[i++] = data_to_buf(TYPE_INT, (void *)(&addr_type), NULL, 0);
+
+    if (!pg_conncheck())
+        return -1;
+    res = PQexecParams((PGconn*)dbSrv.db_conn, DEFAULT_SAVE_UADDR, i, NULL, paramvalues, NULL, NULL, false);
+
+    for (n = 0; n < i; n++)
+        free((char *)paramvalues[n]);
+
+    rescode = PQresultStatus(res);
+    if (!PGOK(rescode)) {
+        printf( "pg_save_blk failed: %s", PQerrorMessage((const PGconn*)dbSrv.db_conn));
+        goto rollback;
+    }
+
+    id = atoi(PQgetvalue(res, 0, 0));
+    PQclear(res);
+
+    return id;
+ 
+rollback:
+    res = PQexec((PGconn*)dbSrv.db_conn, "Rollback");
+    PQclear(res); 
+    return -1;
+
+}
+
+int pg_save_uaddr_out(int addr_id, int txout_id)
+{
+    PGresult *res;
+    ExecStatusType rescode;
+    int i=0;
+    int n=0;
+    const char *paramvalues[2];
+
+    /* PG does a fine job with timestamps so we won't bother. */
+
+    paramvalues[i++] = data_to_buf(TYPE_INT, (void *)(&addr_id), NULL, 0);
+    paramvalues[i++] = data_to_buf(TYPE_INT, (void *)(&txout_id), NULL, 0);
+
+    if (!pg_conncheck())
+        return -1;
+    res = PQexecParams((PGconn*)dbSrv.db_conn, DEFAULT_SAVE_UADDR_OUT, i, NULL, paramvalues, NULL, NULL, false);
+
+    for (n = 0; n < i; n++)
+        free((char *)paramvalues[n]);
 
     rescode = PQresultStatus(res);
     PQclear(res);
@@ -709,15 +939,20 @@ static bool pg_open(void)
 }
 
 struct SERVER_DB_OPS postgresql_db_ops = {
-    .sql_save_blk      = pg_save_blk,
-    .sql_save_blk_tx   = pg_save_blk_tx,
-    .sql_save_tx       = pg_save_tx,
-    .sql_save_txin     = pg_save_txin,
-    .sql_save_txout    = pg_save_txout,
-    .sql_save_addr     = pg_save_addr,   
-    .sql_save_addr_out = pg_save_addr_out,   
-    .open              = pg_open,
-    .close             = pg_close,
+    .sql_save_blk       = pg_save_blk,
+    .sql_save_blk_tx    = pg_save_blk_tx,
+    .sql_save_tx        = pg_save_tx,
+    .sql_save_txin      = pg_save_txin,
+    .sql_save_txout     = pg_save_txout,
+    .sql_save_addr      = pg_save_addr,   
+    .sql_save_addr_out  = pg_save_addr_out,
+    .sql_save_utx       = pg_save_utx,
+    .sql_save_utxin     = pg_save_utxin,
+    .sql_save_utxout    = pg_save_utxout,
+    .sql_save_uaddr     = pg_save_uaddr,   
+    .sql_save_uaddr_out = pg_save_uaddr_out,
+    .open               = pg_open,
+    .close              = pg_close,
 };
 
 #endif /* HAVE_POSTGRESQL */

@@ -1102,6 +1102,8 @@ bool AcceptToMemoryPool(CTxMemPool& pool, CValidationState &state, const CTransa
         pool.addUnchecked(hash, entry);
     }
 
+    dbSaveUTx(tx);
+
     SyncWithWallets(tx, NULL);
 
     return true;

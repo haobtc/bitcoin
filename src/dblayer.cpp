@@ -142,15 +142,8 @@ int dbSaveBlock(const CBlock &block)
 
   CBlockIndex* blockindex = mapBlockIndex[hash];
 
-  int confirmations = -1;
-  // Only report confirmations if the block is on the main chain
-  if (chainActive.Contains(blockindex))
-      confirmations = chainActive.Height() - blockindex->nHeight + 1;
-
-  uint256 chainwork = blockindex->nChainWork;
-
   if (blockindex->pprev)
-      uint256 prev_hash = blockindex->pprev->GetBlockHash();
+      prev_hash = blockindex->pprev->GetBlockHash();
 
   int blk_size = (int)::GetSerializeSize(block, SER_NETWORK, PROTOCOL_VERSION);
   int height = blockindex->nHeight;
@@ -171,13 +164,67 @@ int dbSaveBlock(const CBlock &block)
   return 0; 
 }
 
-int dbDeleteTx(const CTransaction &tx)
+int dbSaveUTx(const CTransaction &tx)
+{
+  uint256 hash = tx.GetHash();
+  const int32_t version = tx.nVersion;
+  const uint32_t lock_time = tx.nLockTime;
+  bool coinbase = tx.IsCoinBase();
+  unsigned int tx_size = ::GetSerializeSize(tx, SER_NETWORK, PROTOCOL_VERSION);
+  uint256 nhash = 0;
+
+  int tx_id = dbSrv.db_ops->sql_save_utx(hash.begin(), version, lock_time, coinbase, tx_size, nhash.begin());
+
+  INDEX_FOREACH(tx_idx, const CTxIn&txin, tx.vin) {
+        CTransaction txp;
+        uint256 hashBlockp = 0;
+        int prev_out_index = txin.prevout.n;
+        uint256 prev_out = txin.prevout.hash;
+        int p2sh_type = 0;
+             
+        if (GetTransaction(txin.prevout.hash, txp, hashBlockp, true))
+            {
+            const CTxOut& txoutp =  txp.vout[txin.prevout.n];
+            CScript script_sig = txoutp.scriptPubKey;
+            }
+        dbSrv.db_ops->sql_save_utxin(tx_id, tx_idx, prev_out_index, txin.nSequence, &txin.scriptSig[0], prev_out.begin(),p2sh_type);
+  }
+
+  for (unsigned int i = 0; i < tx.vout.size(); i++) {
+      const CTxOut& txout = tx.vout[i];
+      
+      txnouttype txout_type;
+      vector<CTxDestination> addresses;
+      int nRequired;
+
+      if (!ExtractDestinations(txout.scriptPubKey, txout_type, addresses, nRequired)) {
+          LogPrint("dbsql", "save txout  error: \n");
+      }
+
+      int txout_id = dbSrv.db_ops->sql_save_utxout(tx_id, i, &txout.scriptPubKey[0], txout.nValue, txout_type);
+
+      BOOST_FOREACH(const CTxDestination& addr, addresses)
+          {
+          int addr_type = 0;
+          int addr_id = dbSrv.db_ops->sql_save_uaddr(CBitcoinAddress(addr).ToString().c_str() ,addr_type);
+          dbSrv.db_ops->sql_save_uaddr_out(addr_id,txout_id);
+          }
+  }
+  return tx_id;
+}
+
+int dbRemoveUTx(const CTransaction &tx)
+{
+    return 0;
+}
+ 
+int dbRemoveTx(const CTransaction &tx)
     {
     return 0;
     }
  
 
-int dbDeleteBlock(const CBlock &blk)
+int dbRemoveBlock(const CBlock &blk)
     {
     return 0;
     }
