@@ -2671,7 +2671,8 @@ bool AcceptBlock(CBlock& block, CValidationState& state, CBlockIndex** ppindex, 
         return state.Abort(std::string("System error: ") + e.what());
     }
 
-    dbSaveBlock(block);
+    if (DbSyncFinish())
+        dbSaveBlock(block);
 
     return true;
 }
@@ -3015,7 +3016,6 @@ bool CVerifyDB::VerifyDB(CCoinsView *coinsview, int nCheckLevel, int nCheckDepth
         // check level 0: read from disk
         if (!ReadBlockFromDisk(block, pindex))
             return error("VerifyDB() : *** ReadBlockFromDisk failed at %d, hash=%s", pindex->nHeight, pindex->GetBlockHash().ToString());
-        dbSaveBlock(block);
         // check level 1: verify block validity
         if (nCheckLevel >= 1 && !CheckBlock(block, state))
             return error("VerifyDB() : *** found bad block at %d, hash=%s\n", pindex->nHeight, pindex->GetBlockHash().ToString());

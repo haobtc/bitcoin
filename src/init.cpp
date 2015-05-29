@@ -1056,6 +1056,7 @@ bool AppInit2(boost::thread_group& threadGroup)
                     strLoadError = _("Corrupted block database detected");
                     break;
                 }
+                dbSync();
             } catch(std::exception &e) {
                 if (fDebug) LogPrintf("%s\n", e.what());
                 strLoadError = _("Error opening block database");
