@@ -314,7 +314,6 @@ int dbSync()
     if (maxHeight < chainActive.Height()) {
         if (maxHeight != 0)
             i=maxHeight +1;
-        i=chainActive.Height() - 1;
         for (; i<(chainActive.Height() + 1); i++) {
             pblockindex =  chainActive[i];
             if(!ReadBlockFromDisk(block, pblockindex))

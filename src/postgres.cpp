@@ -529,6 +529,7 @@ static int pg_query_maxHeight()
 {
     PGresult *res;
     ExecStatusType rescode;
+    int height = 0;
  
     res = PQexec((PGconn*)dbSrv.db_conn, "select max(height) from blk");
     rescode = PQresultStatus(res);
@@ -537,8 +538,9 @@ static int pg_query_maxHeight()
         PQclear(res);
         return -1;
     }
-
-    return atoi(PQgetvalue(res, 0, 0));
+    height =  atoi(PQgetvalue(res, 0, 0));
+    PQclear(res);
+    return height;
 }
 
 static int pg_query_blk(unsigned char *  hash)
@@ -621,6 +623,7 @@ static int pg_save_blk(unsigned char *  hash,
     rescode = PQresultStatus(res);
     if (!PGOK(rescode)) {
         printf("pg_save_blk failed: %s", PQerrorMessage((const PGconn*)dbSrv.db_conn));
+        PQclear(res);
         return -1;
     }
     id = atoi(PQgetvalue(res, 0, 0));
@@ -632,9 +635,10 @@ static int pg_save_blk(unsigned char *  hash,
 
 int pg_save_blk_tx(int blk_id, int tx_id, int idx)
 {
-     PGresult *res;
+    PGresult *res;
     ExecStatusType rescode;
     int i=0;
+    int n=0;
     const char *paramvalues[3];
 
     /* PG does a fine job with timestamps so we won't bother. */
@@ -645,14 +649,17 @@ int pg_save_blk_tx(int blk_id, int tx_id, int idx)
 
     res = PQexecParams((PGconn*)dbSrv.db_conn, DEFAULT_SAVE_BLK_TX, i, NULL, paramvalues, NULL, NULL, false);
 
+    for (n = 0; n < i; n++)
+        free((char *)paramvalues[n]);
+
     rescode = PQresultStatus(res);
-    PQclear(res);
     if (!PGOK(rescode)) {
         printf( "pg_save_blk_tx failed: %s", PQerrorMessage((const PGconn*)dbSrv.db_conn));
         PQclear(res);
         return -1;
     }
 
+    PQclear(res);
     return 0;
 }
 
@@ -840,6 +847,7 @@ static int pg_delete_utx(int txid)
     rescode = PQresultStatus(res);
     if (!PGOK(rescode)) {
         printf("pg_delete_uaddr_txout error: %s\n", PQerrorMessage((const PGconn*)dbSrv.db_conn));
+        free((char *)paramvalues[0]);
         PQclear(res);
         return -1;
     }
@@ -848,6 +856,7 @@ static int pg_delete_utx(int txid)
     rescode = PQresultStatus(res);
     if (!PGOK(rescode)) {
         printf("pg_delete_utxin error: %s\n", PQerrorMessage((const PGconn*)dbSrv.db_conn));
+        free((char *)paramvalues[0]);
         PQclear(res);
         return -1;
     }
@@ -856,6 +865,7 @@ static int pg_delete_utx(int txid)
     rescode = PQresultStatus(res);
     if (!PGOK(rescode)) {
         printf("pg_delete_utxout error: %s\n", PQerrorMessage((const PGconn*)dbSrv.db_conn));
+        free((char *)paramvalues[0]);
         PQclear(res);
         return -1;
     }
@@ -864,6 +874,7 @@ static int pg_delete_utx(int txid)
     rescode = PQresultStatus(res);
     if (!PGOK(rescode)) {
         printf("pg_delete_utx error: %s\n", PQerrorMessage((const PGconn*)dbSrv.db_conn));
+        free((char *)paramvalues[0]);
         PQclear(res);
         return -1;
     }
