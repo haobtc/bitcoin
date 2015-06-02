@@ -101,6 +101,9 @@ typedef struct timeval tv_t;
     "insert into addr_txout (addr_id, txout_id) \
     values($1,$2)"
 
+#define DEFAULT_UPDATE_BLK\
+    "update blk set chain 1 where hash=$1::bytea"
+
 #define DEFAULT_SAVE_UTX\
     "insert into utx (hash, version, lock_time, coinbase, tx_size, nhash) \
     values($1::bytea,$2,$3,$4::boolean,$5,$6::bytea)  RETURNING id"
@@ -124,7 +127,8 @@ typedef struct timeval tv_t;
 #define DEFAULT_DELETE_UTX    "delete from utx where id=$1"
 #define DEFAULT_DELETE_UTXIN  "delete from utxin where tx_id=$1"
 #define DEFAULT_DELETE_UTXOUT "delete from utxout where tx_id=$1"
-#define DEFAULT_DELETE_UADDR_TXOUT "delete from addr_txout where txout_id in (select id from txout where tx_id=$1)"
+#define DEFAULT_DELETE_UADDR_TXOUT "delete from uaddr_txout where txout_id in (select id from txout where tx_id=$1)"
+#define DEFAULT_DELETE_ADDR_TXOUT "delete from addr_txout where txout_id in (select tx_id from blk_tx where blk_id=$1)"
 
 const char hextbl[] = "0123456789abcdef";
 
@@ -286,9 +290,11 @@ char *data_to_buf(enum data_type typ, void *data, char *buf, size_t siz)
                 break;
         }
 
-        buf = (char *)malloc(siz);
-        if (!buf)
-            printf("(%d) OOM" WHERE_FFL, (int)siz, WHERE_FFL_PASS);
+        if ((typ!=TYPE_SCRIPT) && (typ!=TYPE_HASH) && (typ!=TYPE_ADDR) && (typ!=TYPE_BYTEA)) {
+            buf = (char *)malloc(siz);
+            if (!buf)
+                printf("(%d) OOM" WHERE_FFL, (int)siz, WHERE_FFL_PASS);
+        }
     }
 
     switch (typ) {
@@ -502,12 +508,12 @@ void print_result_set( PGresult * result )
 
 void pq_print(PGresult *res)
 {
-  PQprintOpt options = {0};
+  PQprintOpt options;
 
-  options.header = 1; /* Ask for column headers */ 
-  options.align = 1; /* Pad short columns for alignment */ 
-  options.fieldSep = "|"; /* Use a pipe as the field separator */ 
-  options.expanded= 1; 
+  //options.header = 1; /* Ask for column headers */ 
+  //options.align = 1; /* Pad short columns for alignment */ 
+  //options.fieldSep = "|"; /* Use a pipe as the field separator */ 
+  //options.expanded= 1; 
   PQprint(stdout, res, &options );
 
 }
@@ -548,15 +554,13 @@ static int pg_query_blk(unsigned char *  hash)
     PGresult *res;
     ExecStatusType rescode;
     int i=0;
-    int n=0;
     int id=0;
     const char *paramvalues[1];
  
-    paramvalues[i++] = data_to_buf(TYPE_BYTEA, (void *)(hash), NULL, 0);
+    paramvalues[i++] = data_to_buf(TYPE_HASH, (void *)(hash), NULL, 0);
     res = PQexecParams((PGconn*)dbSrv.db_conn, DEFAULT_SELECT_BLK, i, NULL, paramvalues, NULL, NULL, PQ_READ);
 
-    for (n = 0; n < i; n++)
-        free((char *)paramvalues[n]);
+    free((char *)paramvalues[0]);
 
     rescode = PQresultStatus(res);
     if (!PGOK(rescode)) {
@@ -573,6 +577,30 @@ static int pg_query_blk(unsigned char *  hash)
     PQclear(res);
 
     return id;
+}
+
+static int pg_update_blk(const unsigned char * hash)
+{
+    PGresult *res;
+    ExecStatusType rescode;
+    int i=0;
+    const char *paramvalues[1];
+
+    paramvalues[i++] = data_to_buf(TYPE_HASH, (void *)&hash, NULL, 0);
+
+    res = PQexecParams((PGconn*)dbSrv.db_conn, DEFAULT_UPDATE_BLK, i, NULL, paramvalues, NULL, NULL, PQ_READ);
+    rescode = PQresultStatus(res);
+    if (!PGOK(rescode)) {
+        printf("pg_update_blk error: %s\n", PQerrorMessage((const PGconn*)dbSrv.db_conn));
+        free((char *)paramvalues[0]);
+        PQclear(res);
+        return -1;
+    }
+                                                
+    free((char *)paramvalues[0]);
+    PQclear(res);
+
+    return 0;
 }
 
 static int pg_save_blk(unsigned char *  hash, 
@@ -1166,6 +1194,7 @@ static bool pg_open(void)
 
 struct SERVER_DB_OPS postgresql_db_ops = {
     .save_blk       = pg_save_blk,
+    .update_blk     = pg_update_blk,
     .save_blk_tx    = pg_save_blk_tx,
     .save_tx        = pg_save_tx,
     .save_txin      = pg_save_txin,

@@ -19,7 +19,7 @@
 #include <stdint.h>
 #include "primitives/block.h"
 #include "primitives/transaction.h"
-
+#include "chain.h"
   
 #define HAVE_POSTGRESQL
 
@@ -36,6 +36,7 @@ struct SERVER_DB_OPS {
                              int              chain, 
                              unsigned char *  work);
 
+    int    (*update_blk)(const unsigned char *  hash);
     int    (*save_blk_tx)(int blk_id, int tx_id, int idx);
     int    (*save_tx)(unsigned char * hash, int version, int lock_time, bool coinbase, int tx_size, unsigned char * nhash);
     int    (*save_txin)(int tx_id, int tx_idx, int prev_out_index, int sequence, const unsigned char *script_sig, int script_len, const unsigned char *prev_out, int p2sh_type);
@@ -70,17 +71,18 @@ struct DBSERVER {
     enum   SERVER_DB_ENGINE db_eng;
     struct SERVER_DB_OPS    *db_ops;
 
-    char            *db_name;
-    char            *db_username;
-    char            *db_password;
-    char            *db_host;
+    const char      *db_name;
+    const char      *db_username;
+    const char      *db_password;
+    const char      *db_host;
     int              db_port;
     void            *db_conn;
 };
 
 bool dbOpen();
 void dbClose();
-int  dbSaveBlock(const CBlock &blk);
+int  dbSaveBlock(const CBlockIndex* blockindex, const CBlock &block);
+int  dbDisconnectBlock(const unsigned char * hash);
 int  dbRemoveBlock(const CBlock &blk);
 int  dbSaveTx(const CTransaction &tx);
 int  dbRemoveTx(const CTransaction &tx);

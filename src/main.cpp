@@ -1942,9 +1942,16 @@ bool static DisconnectTip(CValidationState &state) {
         assert(view.Flush());
     }
     LogPrint("bench", "- Disconnect block: %.2fms\n", (GetTimeMicros() - nStart) * 0.001);
+
+    nStart = GetTimeMicros();
+    if (DbSyncFinish())
+       dbDisconnectBlock(block.GetHash().begin());
+    LogPrint("dblayer", "- Disconnect block: %.2fms\n", (GetTimeMicros() - nStart) * 0.001);
+
     // Write the chain state to disk, if necessary.
     if (!FlushStateToDisk(state, FLUSH_STATE_IF_NEEDED))
         return false;
+
     // Resurrect mempool transactions from the disconnected block.
     BOOST_FOREACH(const CTransaction &tx, block.vtx) {
         // ignore validation errors in resurrected transactions
@@ -1962,6 +1969,7 @@ bool static DisconnectTip(CValidationState &state) {
     BOOST_FOREACH(const CTransaction &tx, block.vtx) {
         SyncWithWallets(tx, NULL);
     }
+
     return true;
 }
 
@@ -2031,6 +2039,12 @@ bool static ConnectTip(CValidationState &state, CBlockIndex *pindexNew, CBlock *
     int64_t nTime6 = GetTimeMicros(); nTimePostConnect += nTime6 - nTime5; nTimeTotal += nTime6 - nTime1;
     LogPrint("bench", "  - Connect postprocess: %.2fms [%.2fs]\n", (nTime6 - nTime5) * 0.001, nTimePostConnect * 0.000001);
     LogPrint("bench", "- Connect block: %.2fms [%.2fs]\n", (nTime6 - nTime1) * 0.001, nTimeTotal * 0.000001);
+
+    int64_t nStart = GetTimeMicros();
+    if (DbSyncFinish())
+        dbSaveBlock(pindexNew, block);
+    LogPrint("dblayer", "- Save block: %.2fms\n", (GetTimeMicros() - nStart) * 0.001);
+
     return true;
 }
 
@@ -2670,9 +2684,6 @@ bool AcceptBlock(CBlock& block, CValidationState& state, CBlockIndex** ppindex, 
     } catch(std::runtime_error &e) {
         return state.Abort(std::string("System error: ") + e.what());
     }
-
-    if (DbSyncFinish())
-        dbSaveBlock(block);
 
     return true;
 }

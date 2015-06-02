@@ -134,7 +134,7 @@ int dbSaveTx(const CTransaction &tx)
     }  
 
 
-int dbSaveBlock(const CBlock &block)
+int dbSaveBlock(const CBlockIndex* blockindex, const CBlock &block)
     {
     uint256 hash = block.GetHash();
     uint256 prev_hash = 0;
@@ -144,8 +144,6 @@ int dbSaveBlock(const CBlock &block)
         LogPrint("dblayer", "save blk  error: %s\n",  block.GetHash().GetHex());
         return -1;
         }
-
-    CBlockIndex* blockindex = mapBlockIndex[hash];
 
     if (blockindex->pprev)
         prev_hash = blockindex->pprev->GetBlockHash();
@@ -318,7 +316,7 @@ int dbSync()
             pblockindex =  chainActive[i];
             if(!ReadBlockFromDisk(block, pblockindex))
                 return -1;
-            dbSaveBlock(block);
+            dbSaveBlock(pblockindex, block);
         }
     }
 
@@ -331,3 +329,19 @@ bool DbSyncFinish()
 {
     return dbSyncing;
 }
+
+int dbDisconnectBlock(const unsigned char * hash)
+    {
+
+    if (dbSrv.db_ops->begin() == -1)
+        {
+        dbSrv.db_ops->rollback();
+        return -1; 
+        }
+     
+    //set blk to side chain
+    dbSrv.db_ops->update_blk(hash);
+
+    dbSrv.db_ops->commit();
+    return 0;
+    }
