@@ -67,9 +67,10 @@ bool dbSyncing = false;
 
 bool dbOpen()
     {
-    if (!dbSrv.db_ops->open())                                                                                            
-        printf("\n db open fail!\n");
-    return false;
+    if (!dbSrv.db_ops->open()) {
+        LogPrint("dblayer", "\n db open fail!\n");
+        return false;
+    }
     return true;
 
     }
@@ -89,6 +90,9 @@ int dbSaveTx(const CTransaction &tx)
     uint256 nhash = 0;
 
     int tx_id = dbSrv.db_ops->save_tx(hash.begin(), version, lock_time, coinbase, tx_size, nhash.begin());
+    if (tx_id == -1){
+            LogPrint("dblayer", "save_tx error tx hash %s \n", hash.ToString());
+    }
 
     INDEX_FOREACH(tx_idx, const CTxIn&txin, tx.vin) {
         CTransaction txp;
@@ -102,7 +106,9 @@ int dbSaveTx(const CTransaction &tx)
             const CTxOut& txoutp =  txp.vout[txin.prevout.n];
             CScript script_sig = txoutp.scriptPubKey;
             }
-        dbSrv.db_ops->save_txin(tx_id, tx_idx, prev_out_index, txin.nSequence, &txin.scriptSig[0], txin.scriptSig.size(), prev_out.begin(),p2sh_type);
+        if (dbSrv.db_ops->save_txin(tx_id, tx_idx, prev_out_index, txin.nSequence, &txin.scriptSig[0], txin.scriptSig.size(), prev_out.begin(),p2sh_type) == -1){
+            LogPrint("dblayer", "save_txin error txid %d txin index %d \n", tx_id ,tx_idx);
+        }
     }
 
     for (unsigned int i = 0; i < tx.vout.size(); i++) {
@@ -113,22 +119,33 @@ int dbSaveTx(const CTransaction &tx)
         int nRequired;
 
         if (!ExtractDestinations(txout.scriptPubKey, txout_type, addresses, nRequired)) {
-            LogPrint("dblayer", "save txout  error: \n");
+            LogPrint("dblayer", "ExtractDestinations error: \n");
         }
 
         int txout_id = dbSrv.db_ops->save_txout(tx_id, i, &txout.scriptPubKey[0], txout.scriptPubKey.size(), txout.nValue, txout_type);
+        if (txout_id == -1){
+            LogPrint("dblayer", "save_txout error txid %d txout index %d \n", tx_id ,i);
+        }
 
-        BOOST_FOREACH(const CTxDestination& dest, addresses)
-            {
+        BOOST_FOREACH(const CTxDestination& dest, addresses) {
             int addr_type = 0;
             CKeyID keyId;
             CBitcoinAddress addr(dest);
             if (!addr.GetKeyID(keyId))
-               LogPrint("dblayer", "addr GetKeyID  error: \n");
+               {
+               //some non stand txout will due to error in here
+               //LogPrint("dblayer", "addr GetKeyID  error: \n");
+               continue;
+               }
                 
             int addr_id = dbSrv.db_ops->save_addr((const char*)keyId.begin(),addr_type);
-            dbSrv.db_ops->save_addr_out(addr_id,txout_id);
+            if (addr_id == -1){
+                LogPrint("dblayer", "save_addr error addr: %s \n", addr.ToString());
             }
+            if (dbSrv.db_ops->save_addr_out(addr_id,txout_id) == -1){
+                LogPrint("dblayer", "save_addr_out error addr: %s \n", addr.ToString());
+            }
+        }
     }
     return tx_id;
     }  
@@ -139,14 +156,10 @@ int dbSaveBlock(const CBlockIndex* blockindex, const CBlock &block)
     uint256 hash = block.GetHash();
     uint256 prev_hash = 0;
 
-    if (mapBlockIndex.count(hash) == 0)
-        {
-        LogPrint("dblayer", "save blk  error: %s\n",  block.GetHash().GetHex());
-        return -1;
-        }
-
     if (blockindex->pprev)
         prev_hash = blockindex->pprev->GetBlockHash();
+    else
+        LogPrint("dblayer", "prev blk is Null, blk hash : %s\n",  block.GetHash().GetHex());
 
     int blk_size = (int)::GetSerializeSize(block, SER_NETWORK, PROTOCOL_VERSION);
     int height = blockindex->nHeight;
@@ -160,6 +173,7 @@ int dbSaveBlock(const CBlockIndex* blockindex, const CBlock &block)
     if (dbSrv.db_ops->begin() == -1)
         {
         dbSrv.db_ops->rollback();
+        LogPrint("dblayer", "block save first roll back height: %d \n", height);
         return -1; 
         }
 
@@ -167,11 +181,28 @@ int dbSaveBlock(const CBlockIndex* blockindex, const CBlock &block)
     if (blk_id == -1)
         {
         dbSrv.db_ops->rollback();
-        return -1; 
+
+        if (dbSrv.db_ops->begin() == -1) {
+            dbSrv.db_ops->rollback();
+            LogPrint("dblayer", "block save second roll back height: %d \n", height);
+            return -1; 
+            }
+        blk_id = dbSrv.db_ops->save_blk( hash.begin(), height, version, prev_hash.begin(), mrkl_root.begin(), time, bits, nonce, blk_size, 0, work.begin());
+        if (blk_id == -1) {
+           LogPrint("dblayer", "block save fail height: %d \n", height);
+           dbSrv.db_ops->rollback();
+           return -1; 
+           }
+
         }
 
     INDEX_FOREACH(idx, const CTransaction&tx, block.vtx) {
         int tx_id = dbSaveTx(tx);
+        if (blk_id == -1) {
+           LogPrint("dblayer", "tx save fail block height: %d,  txhash: %s \n", height, tx.GetHash().ToString());
+           dbSrv.db_ops->rollback();
+           return -1; 
+           }
         dbSrv.db_ops->save_blk_tx(blk_id, tx_id, idx);
     }
 
@@ -314,9 +345,12 @@ int dbSync()
             i=maxHeight +1;
         for (; i<(chainActive.Height() + 1); i++) {
             pblockindex =  chainActive[i];
+            int64_t nStart = GetTimeMicros();
             if(!ReadBlockFromDisk(block, pblockindex))
                 return -1;
+            LogPrint("dblayer", "- read block from disk: %.2fms\n", (GetTimeMicros() - nStart) * 0.001);
             dbSaveBlock(pblockindex, block);
+            LogPrint("dblayer", "- Save block to db: %.2fms height %d\n", (GetTimeMicros() - nStart) * 0.001, pblockindex->nHeight);
         }
     }
 

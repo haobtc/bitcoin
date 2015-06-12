@@ -27,6 +27,7 @@
 #include <netinet/in.h>
 #include <syslog.h>
 #include <postgresql/libpq-fe.h>
+#include "util.h"
 #include <db.h>
 
 #define PGOK(_res) ((_res) == PGRES_COMMAND_OK || \
@@ -286,14 +287,14 @@ char *data_to_buf(enum data_type typ, void *data, char *buf, size_t siz)
                 siz = 5;
                 break;
             default:
-                printf("Unknown field (%d) to convert" WHERE_FFL, (int)typ, WHERE_FFL_PASS);
+                LogPrint("dblayer", "Unknown field (%d) to convert" WHERE_FFL, (int)typ, WHERE_FFL_PASS);
                 break;
         }
 
         if ((typ!=TYPE_SCRIPT) && (typ!=TYPE_HASH) && (typ!=TYPE_ADDR) && (typ!=TYPE_BYTEA)) {
             buf = (char *)malloc(siz);
             if (!buf)
-                printf("(%d) OOM" WHERE_FFL, (int)siz, WHERE_FFL_PASS);
+                LogPrint("dblayer", "(%d) OOM" WHERE_FFL, (int)siz, WHERE_FFL_PASS);
         }
     }
 
@@ -360,14 +361,14 @@ void txt_to_data(enum data_type typ, char *nam, char *fld, void *data, size_t si
         case TYPE_STR:
             // A database field being bigger than local storage is a fatal error
             if (siz < (strlen(fld)+1)) {
-                printf( "Field %s structure size %d is smaller than db %d" WHERE_FFL,
+                LogPrint("dblayer",  "Field %s structure size %d is smaller than db %d" WHERE_FFL,
                         nam, (int)siz, (int)strlen(fld)+1, WHERE_FFL_PASS);
             }
             strcpy((char *)data, fld);
             break;
         case TYPE_BIGINT:
             if (siz != sizeof(int64_t)) {
-                printf( "Field %s bigint incorrect structure size %d - should be %d"
+                LogPrint("dblayer",  "Field %s bigint incorrect structure size %d - should be %d"
                         WHERE_FFL,
                         nam, (int)siz, (int)sizeof(int64_t), WHERE_FFL_PASS);
             }
@@ -375,7 +376,7 @@ void txt_to_data(enum data_type typ, char *nam, char *fld, void *data, size_t si
             break;
         case TYPE_INT:
             if (siz != sizeof(int32_t)) {
-                printf( "Field %s int incorrect structure size %d - should be %d"
+                LogPrint("dblayer",  "Field %s int incorrect structure size %d - should be %d"
                         WHERE_FFL,
                         nam, (int)siz, (int)sizeof(int32_t), WHERE_FFL_PASS);
             }
@@ -384,21 +385,21 @@ void txt_to_data(enum data_type typ, char *nam, char *fld, void *data, size_t si
         case TYPE_BLOB:
             tmp = strdup(fld);
             if (!tmp) {
-                printf( "Field %s (%d) OOM" WHERE_FFL,
+                LogPrint("dblayer",  "Field %s (%d) OOM" WHERE_FFL,
                         nam, (int)strlen(fld), WHERE_FFL_PASS);
             }
             *((char **)data) = tmp;
             break;
         case TYPE_DOUBLE:
             if (siz != sizeof(double)) {
-                printf( "Field %s int incorrect structure size %d - should be %d"
+                LogPrint("dblayer",  "Field %s int incorrect structure size %d - should be %d"
                         WHERE_FFL,
                         nam, (int)siz, (int)sizeof(double), WHERE_FFL_PASS);
             }
             *((double *)data) = atof(fld);
             break;
         default:
-            printf( "Unknown field %s (%d) to convert" WHERE_FFL,
+            LogPrint("dblayer",  "Unknown field %s (%d) to convert" WHERE_FFL,
                     nam, (int)typ, WHERE_FFL_PASS);
             break;
     }
@@ -409,17 +410,17 @@ void print_meta_data( PGresult * result )
 { 
     int col; 
 
-    printf( "Status: %s\n", PQresStatus( PQresultStatus( result ))); 
-    printf( "Returned %d rows ", PQntuples( result )); 
-    printf( "with %d columns\n\n", PQnfields( result )); 
+    LogPrint("dblayer",  "Status: %s\n", PQresStatus( PQresultStatus( result ))); 
+    LogPrint("dblayer",  "Returned %d rows ", PQntuples( result )); 
+    LogPrint("dblayer",  "with %d columns\n\n", PQnfields( result )); 
 
-    printf( "Column Type TypeMod Size Name \n" ); 
+    LogPrint("dblayer",  "Column Type TypeMod Size Name \n" ); 
 
-    printf( "------ ---- ------- ---- -----------\n" ); 
+    LogPrint("dblayer",  "------ ---- ------- ---- -----------\n" ); 
 
     for( col =0 ; col < PQnfields( result ); col++ ) 
         { 
-        printf( "%3d %4d %7d %4d %s\n",col, 
+        LogPrint("dblayer",  "%3d %4d %7d %4d %s\n",col, 
                 PQftype( result, col ), 
                 PQfmod( result, col ), 
                 PQfsize( result, col ), 
@@ -468,10 +469,10 @@ void print_result_set( PGresult * result )
      */ 
     for( col = 0; col < PQnfields( result ); col++ ) 
         { 
-        printf( "%-*s ", sizes[col], PQfname( result, col )); 
+        LogPrint("dblayer",  "%-*s ", sizes[col], PQfname( result, col )); 
         } 
 
-    printf( "\n" ); 
+    LogPrint("dblayer",  "\n" ); 
 
     /* 
      ** Print the separator line 
@@ -480,10 +481,10 @@ void print_result_set( PGresult * result )
 
     for( col = 0; col < PQnfields( result ); col++ ) 
         { 
-        printf( "%*.*s ", sizes[col], sizes[col], separator ); 
+        LogPrint("dblayer",  "%*.*s ", sizes[col], sizes[col], separator ); 
         } 
 
-    printf( "\n" ); 
+    LogPrint("dblayer",  "\n" ); 
 
     /* 
      ** Now loop through each of the tuples returned by 
@@ -494,15 +495,15 @@ void print_result_set( PGresult * result )
         for( col = 0; col < PQnfields( result ); col++ ) 
             { 
             if( PQgetisnull( result, row, col )) 
-                printf( "%*s", sizes[col], "" ); 
+                LogPrint("dblayer",  "%*s", sizes[col], "" ); 
             else 
-                printf( "%*s ", sizes[col], PQgetvalue( result, row, col )); 
+                LogPrint("dblayer",  "%*s ", sizes[col], PQgetvalue( result, row, col )); 
             } 
 
-        printf( "\n" ); 
+        LogPrint("dblayer",  "\n" ); 
 
         } 
-    printf( "(%d rows)\n\n", PQntuples( result )); 
+    LogPrint("dblayer",  "(%d rows)\n\n", PQntuples( result )); 
     free( sizes ); 
 }
 
@@ -521,10 +522,10 @@ void pq_print(PGresult *res)
 static bool pg_conncheck(void)
 {
     if (PQstatus((const PGconn*)(dbSrv.db_conn)) != CONNECTION_OK) {
-        printf("Connection to PostgreSQL lost: reconnecting.\n");
+        LogPrint("dblayer", "Connection to PostgreSQL lost: reconnecting.\n");
         PQreset((PGconn*)(dbSrv.db_conn));
         if (PQstatus((const PGconn*)(dbSrv.db_conn)) != CONNECTION_OK) {
-            printf("Reconnect attempt failed.\n");
+            LogPrint("dblayer", "Reconnect attempt failed.\n");
             return false;
         }
     }
@@ -540,7 +541,7 @@ static int pg_query_maxHeight()
     res = PQexec((PGconn*)dbSrv.db_conn, "select max(height) from blk");
     rescode = PQresultStatus(res);
     if (!PGOK(rescode)) {
-        printf("pg_query_maxHeight error: %s\n", PQerrorMessage((const PGconn*)dbSrv.db_conn));
+        LogPrint("dblayer", "pg_query_maxHeight error: %s\n", PQerrorMessage((const PGconn*)dbSrv.db_conn));
         PQclear(res);
         return -1;
     }
@@ -564,7 +565,7 @@ static int pg_query_blk(unsigned char *  hash)
 
     rescode = PQresultStatus(res);
     if (!PGOK(rescode)) {
-        printf("pg_query_blk error: %s\n", PQerrorMessage((const PGconn*)dbSrv.db_conn));
+        LogPrint("dblayer", "pg_query_blk error: %s\n", PQerrorMessage((const PGconn*)dbSrv.db_conn));
         PQclear(res);
         return -1;
     }
@@ -591,7 +592,7 @@ static int pg_update_blk(const unsigned char * hash)
     res = PQexecParams((PGconn*)dbSrv.db_conn, DEFAULT_UPDATE_BLK, i, NULL, paramvalues, NULL, NULL, PQ_READ);
     rescode = PQresultStatus(res);
     if (!PGOK(rescode)) {
-        printf("pg_update_blk error: %s\n", PQerrorMessage((const PGconn*)dbSrv.db_conn));
+        LogPrint("dblayer", "pg_update_blk error: %s\n", PQerrorMessage((const PGconn*)dbSrv.db_conn));
         free((char *)paramvalues[0]);
         PQclear(res);
         return -1;
@@ -625,7 +626,7 @@ static int pg_save_blk(unsigned char *  hash,
     //check if block in database
     if (pg_query_blk(hash)>0)
        {
-       printf("pg_save_blk : block %d exists in database.\n", height);
+       LogPrint("dblayer", "pg_save_blk : block %d exists in database.\n", height);
        return -1; 
        }
 
@@ -650,7 +651,7 @@ static int pg_save_blk(unsigned char *  hash,
 
     rescode = PQresultStatus(res);
     if (!PGOK(rescode)) {
-        printf("pg_save_blk failed: %s", PQerrorMessage((const PGconn*)dbSrv.db_conn));
+        LogPrint("dblayer", "pg_save_blk failed: %s", PQerrorMessage((const PGconn*)dbSrv.db_conn));
         PQclear(res);
         return -1;
     }
@@ -682,7 +683,7 @@ int pg_save_blk_tx(int blk_id, int tx_id, int idx)
 
     rescode = PQresultStatus(res);
     if (!PGOK(rescode)) {
-        printf( "pg_save_blk_tx failed: %s", PQerrorMessage((const PGconn*)dbSrv.db_conn));
+        LogPrint("dblayer",  "pg_save_blk_tx failed: %s", PQerrorMessage((const PGconn*)dbSrv.db_conn));
         PQclear(res);
         return -1;
     }
@@ -716,7 +717,7 @@ int pg_save_tx(unsigned char * hash, int version, int lock_time, bool coinbase, 
 
     rescode = PQresultStatus(res);
     if (!PGOK(rescode)) {
-        printf( "pg_save_tx failed: %s", PQerrorMessage((const PGconn*)dbSrv.db_conn));
+        LogPrint("dblayer",  "pg_save_tx failed: %s", PQerrorMessage((const PGconn*)dbSrv.db_conn));
         PQclear(res);
         return -1;
     }
@@ -753,7 +754,7 @@ int pg_save_txin(int tx_id, int tx_idx, int prev_out_index, int sequence, const 
     
     rescode = PQresultStatus(res);
     if (!PGOK(rescode)) {
-        printf( "pg_save_txin failed: %s", PQerrorMessage((const PGconn*)dbSrv.db_conn));
+        LogPrint("dblayer",  "pg_save_txin failed: %s", PQerrorMessage((const PGconn*)dbSrv.db_conn));
         PQclear(res);
         return -1;
     }
@@ -788,7 +789,7 @@ int pg_save_txout (int tx_id, int idx, const unsigned char * scriptPubKey, int s
  
     rescode = PQresultStatus(res);
     if (!PGOK(rescode)) {
-        printf( "pg_save_txout failed: %s", PQerrorMessage((const PGconn*)dbSrv.db_conn));
+        LogPrint("dblayer",  "pg_save_txout failed: %s", PQerrorMessage((const PGconn*)dbSrv.db_conn));
         PQclear(res);
         return -1;
     }
@@ -820,7 +821,7 @@ int pg_save_addr(const char * addr, int addr_type)
 
     rescode = PQresultStatus(res);
     if (!PGOK(rescode)) {
-        printf( "pg_save_addr failed: %s", PQerrorMessage((const PGconn*)dbSrv.db_conn));
+        LogPrint("dblayer",  "pg_save_addr failed: %s", PQerrorMessage((const PGconn*)dbSrv.db_conn));
         PQclear(res);
         return -1;
     }
@@ -847,7 +848,7 @@ static int pg_query_utx(unsigned char *  hash)
 
     rescode = PQresultStatus(res);
     if (!PGOK(rescode)) {
-        printf("pg_query_tx error: %s\n", PQerrorMessage((const PGconn*)dbSrv.db_conn));
+        LogPrint("dblayer", "pg_query_tx error: %s\n", PQerrorMessage((const PGconn*)dbSrv.db_conn));
         PQclear(res);
         return -1;
     }
@@ -874,7 +875,7 @@ static int pg_delete_utx(int txid)
     res = PQexecParams((PGconn*)dbSrv.db_conn, DEFAULT_DELETE_UADDR_TXOUT, i, NULL, paramvalues, NULL, NULL, PQ_READ);
     rescode = PQresultStatus(res);
     if (!PGOK(rescode)) {
-        printf("pg_delete_uaddr_txout error: %s\n", PQerrorMessage((const PGconn*)dbSrv.db_conn));
+        LogPrint("dblayer", "pg_delete_uaddr_txout error: %s\n", PQerrorMessage((const PGconn*)dbSrv.db_conn));
         free((char *)paramvalues[0]);
         PQclear(res);
         return -1;
@@ -883,7 +884,7 @@ static int pg_delete_utx(int txid)
     res = PQexecParams((PGconn*)dbSrv.db_conn, DEFAULT_DELETE_UTXIN, i, NULL, paramvalues, NULL, NULL, PQ_READ);
     rescode = PQresultStatus(res);
     if (!PGOK(rescode)) {
-        printf("pg_delete_utxin error: %s\n", PQerrorMessage((const PGconn*)dbSrv.db_conn));
+        LogPrint("dblayer", "pg_delete_utxin error: %s\n", PQerrorMessage((const PGconn*)dbSrv.db_conn));
         free((char *)paramvalues[0]);
         PQclear(res);
         return -1;
@@ -892,7 +893,7 @@ static int pg_delete_utx(int txid)
     res = PQexecParams((PGconn*)dbSrv.db_conn, DEFAULT_DELETE_UTXOUT, i, NULL, paramvalues, NULL, NULL, PQ_READ);
     rescode = PQresultStatus(res);
     if (!PGOK(rescode)) {
-        printf("pg_delete_utxout error: %s\n", PQerrorMessage((const PGconn*)dbSrv.db_conn));
+        LogPrint("dblayer", "pg_delete_utxout error: %s\n", PQerrorMessage((const PGconn*)dbSrv.db_conn));
         free((char *)paramvalues[0]);
         PQclear(res);
         return -1;
@@ -901,7 +902,7 @@ static int pg_delete_utx(int txid)
     res = PQexecParams((PGconn*)dbSrv.db_conn, DEFAULT_DELETE_UTX, i, NULL, paramvalues, NULL, NULL, PQ_READ);
     rescode = PQresultStatus(res);
     if (!PGOK(rescode)) {
-        printf("pg_delete_utx error: %s\n", PQerrorMessage((const PGconn*)dbSrv.db_conn));
+        LogPrint("dblayer", "pg_delete_utx error: %s\n", PQerrorMessage((const PGconn*)dbSrv.db_conn));
         free((char *)paramvalues[0]);
         PQclear(res);
         return -1;
@@ -933,7 +934,7 @@ int pg_save_addr_out(int addr_id, int txout_id)
 
     rescode = PQresultStatus(res);
     if (!PGOK(rescode)) {
-        printf( "pg_save_addr_out failed: %s", PQerrorMessage((const PGconn*)dbSrv.db_conn));
+        LogPrint("dblayer",  "pg_save_addr_out failed: %s", PQerrorMessage((const PGconn*)dbSrv.db_conn));
         PQclear(res);
         return -1;
     }
@@ -968,7 +969,7 @@ int pg_save_utx(unsigned char * hash, int version, int lock_time, bool coinbase,
 
     rescode = PQresultStatus(res);
     if (!PGOK(rescode)) {
-        printf( "pg_save_utx failed: %s", PQerrorMessage((const PGconn*)dbSrv.db_conn));
+        LogPrint("dblayer",  "pg_save_utx failed: %s", PQerrorMessage((const PGconn*)dbSrv.db_conn));
         PQclear(res);
         return -1;
     }
@@ -1005,7 +1006,7 @@ int pg_save_utxin(int tx_id, int tx_idx, int prev_out_index, int sequence, const
     
     rescode = PQresultStatus(res);
     if (!PGOK(rescode)) {
-        printf( "pg_save_utxin failed: %s", PQerrorMessage((const PGconn*)dbSrv.db_conn));
+        LogPrint("dblayer",  "pg_save_utxin failed: %s", PQerrorMessage((const PGconn*)dbSrv.db_conn));
         PQclear(res);
         return -1;
     }
@@ -1040,7 +1041,7 @@ int pg_save_utxout (int tx_id, int idx, const unsigned char * scriptPubKey, int 
  
     rescode = PQresultStatus(res);
     if (!PGOK(rescode)) {
-        printf( "pg_save_utxout failed: %s", PQerrorMessage((const PGconn*)dbSrv.db_conn));
+        LogPrint("dblayer",  "pg_save_utxout failed: %s", PQerrorMessage((const PGconn*)dbSrv.db_conn));
         PQclear(res);
         return -1;
     }
@@ -1072,7 +1073,7 @@ int pg_save_uaddr(const char * addr, int addr_type)
 
     rescode = PQresultStatus(res);
     if (!PGOK(rescode)) {
-        printf( "pg_save_uaddr failed: %s", PQerrorMessage((const PGconn*)dbSrv.db_conn));
+        LogPrint("dblayer",  "pg_save_uaddr failed: %s", PQerrorMessage((const PGconn*)dbSrv.db_conn));
         PQclear(res);
         return -1;
     }
@@ -1104,7 +1105,7 @@ int pg_save_uaddr_out(int addr_id, int txout_id)
 
     rescode = PQresultStatus(res);
     if (!PGOK(rescode)) {
-        printf( "pg_save_uaddr_out failed: %s", PQerrorMessage((const PGconn*)dbSrv.db_conn));
+        LogPrint("dblayer",  "pg_save_uaddr_out failed: %s", PQerrorMessage((const PGconn*)dbSrv.db_conn));
         PQclear(res);
         return -1;
     }
@@ -1174,7 +1175,7 @@ static bool pg_open(void)
                   dbSrv.db_password);
     free(portstr);
     if (PQstatus((const PGconn*)dbSrv.db_conn) != CONNECTION_OK) {
-        printf( "failed to connect to postgresql: %s",
+        LogPrint("dblayer",  "failed to connect to postgresql: %s",
                PQerrorMessage((const PGconn*)dbSrv.db_conn));
         pg_close();
         return false;
@@ -1182,13 +1183,13 @@ static bool pg_open(void)
 
     if (PQsetClientEncoding((PGconn*)dbSrv.db_conn, "UTF-8"))
     {
-        printf( "failed to connect to postgresql: %s",
+        LogPrint("dblayer",  "failed to connect to postgresql: %s",
                PQerrorMessage((const PGconn*)dbSrv.db_conn));
         pg_close();
         return false;
     }
 
-    printf( "Connect to postgresql\n");
+    LogPrint("dblayer",  "Connect to postgresql\n");
     return true;
 }
 

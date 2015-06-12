@@ -2041,9 +2041,13 @@ bool static ConnectTip(CValidationState &state, CBlockIndex *pindexNew, CBlock *
     LogPrint("bench", "- Connect block: %.2fms [%.2fs]\n", (nTime6 - nTime1) * 0.001, nTimeTotal * 0.000001);
 
     int64_t nStart = GetTimeMicros();
-    if (DbSyncFinish())
-        dbSaveBlock(pindexNew, block);
-    LogPrint("dblayer", "- Save block: %.2fms\n", (GetTimeMicros() - nStart) * 0.001);
+    if (DbSyncFinish()) {
+       if (!pblock) 
+           dbSaveBlock(pindexNew, block);
+       else
+           dbSaveBlock(pindexNew, *pblock);
+    }
+    LogPrint("dblayer", "- Save block to db: %.2fms height %d\n", (GetTimeMicros() - nStart) * 0.001, pindexNew->nHeight);
 
     return true;
 }
