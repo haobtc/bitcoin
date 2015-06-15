@@ -103,7 +103,7 @@ typedef struct timeval tv_t;
     values($1,$2)"
 
 #define DEFAULT_UPDATE_BLK\
-    "update blk set chain 1 where hash=$1::bytea"
+    "update blk set chain=1 where hash=$1::bytea"
 
 #define DEFAULT_SAVE_UTX\
     "insert into utx (hash, version, lock_time, coinbase, tx_size, nhash) \
