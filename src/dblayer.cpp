@@ -89,61 +89,64 @@ int dbSaveTx(const CTransaction &tx)
     unsigned int tx_size = ::GetSerializeSize(tx, SER_NETWORK, PROTOCOL_VERSION);
     uint256 nhash = 0;
 
-    int tx_id = dbSrv.db_ops->save_tx(hash.begin(), version, lock_time, coinbase, tx_size, nhash.begin());
-    if (tx_id == -1){
+    int tx_id = dbSrv.db_ops->query_tx(hash.begin());
+    if (tx_id ==-1) {
+        tx_id = dbSrv.db_ops->save_tx(hash.begin(), version, lock_time, coinbase, tx_size, nhash.begin());
+        if (tx_id == -1){
             LogPrint("dblayer", "save_tx error tx hash %s \n", hash.ToString());
-    }
+        }
 
-    INDEX_FOREACH(tx_idx, const CTxIn&txin, tx.vin) {
-        CTransaction txp;
-        uint256 hashBlockp = 0;
-        int prev_out_index = txin.prevout.n;
-        uint256 prev_out = txin.prevout.hash;
-        int p2sh_type = 0;
+        INDEX_FOREACH(tx_idx, const CTxIn&txin, tx.vin) {
+            CTransaction txp;
+            uint256 hashBlockp = 0;
+            int prev_out_index = txin.prevout.n;
+            uint256 prev_out = txin.prevout.hash;
+            int p2sh_type = 0;
 
-        if (GetTransaction(txin.prevout.hash, txp, hashBlockp, true))
-            {
-            const CTxOut& txoutp =  txp.vout[txin.prevout.n];
-            CScript script_sig = txoutp.scriptPubKey;
+            if (GetTransaction(txin.prevout.hash, txp, hashBlockp, true))
+                {
+                const CTxOut& txoutp =  txp.vout[txin.prevout.n];
+                CScript script_sig = txoutp.scriptPubKey;
+                }
+            if (dbSrv.db_ops->save_txin(tx_id, tx_idx, prev_out_index, txin.nSequence, &txin.scriptSig[0], txin.scriptSig.size(), prev_out.begin(),p2sh_type) == -1){
+                LogPrint("dblayer", "save_txin error txid %d txin index %d \n", tx_id ,tx_idx);
             }
-        if (dbSrv.db_ops->save_txin(tx_id, tx_idx, prev_out_index, txin.nSequence, &txin.scriptSig[0], txin.scriptSig.size(), prev_out.begin(),p2sh_type) == -1){
-            LogPrint("dblayer", "save_txin error txid %d txin index %d \n", tx_id ,tx_idx);
-        }
-    }
-
-    for (unsigned int i = 0; i < tx.vout.size(); i++) {
-        const CTxOut& txout = tx.vout[i];
-
-        txnouttype txout_type;
-        vector<CTxDestination> addresses;
-        int nRequired;
-
-        if (!ExtractDestinations(txout.scriptPubKey, txout_type, addresses, nRequired)) {
-            LogPrint("dblayer", "ExtractDestinations error: \n");
         }
 
-        int txout_id = dbSrv.db_ops->save_txout(tx_id, i, &txout.scriptPubKey[0], txout.scriptPubKey.size(), txout.nValue, txout_type);
-        if (txout_id == -1){
-            LogPrint("dblayer", "save_txout error txid %d txout index %d \n", tx_id ,i);
-        }
+        for (unsigned int i = 0; i < tx.vout.size(); i++) {
+            const CTxOut& txout = tx.vout[i];
 
-        BOOST_FOREACH(const CTxDestination& dest, addresses) {
-            int addr_type = 0;
-            CKeyID keyId;
-            CBitcoinAddress addr(dest);
-            if (!addr.GetKeyID(keyId))
-               {
-               //some non stand txout will due to error in here
-               //LogPrint("dblayer", "addr GetKeyID  error: \n");
-               continue;
-               }
-                
-            int addr_id = dbSrv.db_ops->save_addr((const char*)keyId.begin(),addr_type);
-            if (addr_id == -1){
-                LogPrint("dblayer", "save_addr error addr: %s \n", addr.ToString());
+            txnouttype txout_type;
+            vector<CTxDestination> addresses;
+            int nRequired;
+
+            if (!ExtractDestinations(txout.scriptPubKey, txout_type, addresses, nRequired)) {
+                LogPrint("dblayer", "ExtractDestinations error: \n");
             }
-            if (dbSrv.db_ops->save_addr_out(addr_id,txout_id) == -1){
-                LogPrint("dblayer", "save_addr_out error addr: %s \n", addr.ToString());
+
+            int txout_id = dbSrv.db_ops->save_txout(tx_id, i, &txout.scriptPubKey[0], txout.scriptPubKey.size(), txout.nValue, txout_type);
+            if (txout_id == -1){
+                LogPrint("dblayer", "save_txout error txid %d txout index %d \n", tx_id ,i);
+            }
+
+            BOOST_FOREACH(const CTxDestination& dest, addresses) {
+                int addr_type = 0;
+                CKeyID keyId;
+                CBitcoinAddress addr(dest);
+                if (!addr.GetKeyID(keyId))
+                    {
+                    //some non stand txout will due to error in here
+                    //LogPrint("dblayer", "addr GetKeyID  error: \n");
+                    continue;
+                    }
+
+                int addr_id = dbSrv.db_ops->save_addr((const char*)keyId.begin(),addr_type);
+                if (addr_id == -1){
+                    LogPrint("dblayer", "save_addr error addr: %s \n", addr.ToString());
+                }
+                if (dbSrv.db_ops->save_addr_out(addr_id,txout_id) == -1){
+                    LogPrint("dblayer", "save_addr_out error addr: %s \n", addr.ToString());
+                }
             }
         }
     }
@@ -211,125 +214,44 @@ int dbSaveBlock(const CBlockIndex* blockindex, const CBlock &block)
     return 0; 
     }
 
-int dbSaveUTx(const CTransaction &tx)
-    {
-    uint256 hash = tx.GetHash();
-    const int32_t version = tx.nVersion;
-    const uint32_t lock_time = tx.nLockTime;
-    bool coinbase = tx.IsCoinBase();
-    unsigned int tx_size = ::GetSerializeSize(tx, SER_NETWORK, PROTOCOL_VERSION);
-    uint256 nhash = 0;
 
+int dbAcceptTx(const CTransaction &tx)
+{
     if (dbSrv.db_ops->begin() == -1)
+        {
+        dbSrv.db_ops->rollback();
+        LogPrint("dblayer", "dbAcceptTx roll back: %s \n", tx.GetHash().ToString());
         return -1; 
-
-    int tx_id = dbSrv.db_ops->save_utx(hash.begin(), version, lock_time, coinbase, tx_size, nhash.begin());
-
-    INDEX_FOREACH(tx_idx, const CTxIn&txin, tx.vin) {
-        CTransaction txp;
-        uint256 hashBlockp = 0;
-        int prev_out_index = txin.prevout.n;
-        uint256 prev_out = txin.prevout.hash;
-        int p2sh_type = 0;
-
-        if (GetTransaction(txin.prevout.hash, txp, hashBlockp, true))
-            {
-            const CTxOut& txoutp =  txp.vout[txin.prevout.n];
-            CScript script_sig = txoutp.scriptPubKey;
-            }
-        dbSrv.db_ops->save_utxin(tx_id, tx_idx, prev_out_index, txin.nSequence, &txin.scriptSig[0], txin.scriptSig.size(), prev_out.begin(),p2sh_type);
-    }
-
-    for (unsigned int i = 0; i < tx.vout.size(); i++) {
-        const CTxOut& txout = tx.vout[i];
-
-        txnouttype txout_type;
-        vector<CTxDestination> addresses;
-        int nRequired;
-
-        if (!ExtractDestinations(txout.scriptPubKey, txout_type, addresses, nRequired)) {
-            LogPrint("dblayer", "ExtractDestinations error: \n");
         }
-
-        int txout_id = dbSrv.db_ops->save_utxout(tx_id, i, &txout.scriptPubKey[0], txout.scriptPubKey.size(), txout.nValue, txout_type);
-
-        BOOST_FOREACH(const CTxDestination& dest, addresses)
-            {
-            int addr_type = 0;
-            CKeyID keyId;
-            CBitcoinAddress addr(dest);
-            if (!addr.GetKeyID(keyId))
-               LogPrint("dblayer", "uaddr GetKeyID  error: \n");
-                
-            int addr_id = dbSrv.db_ops->save_addr((const char*)keyId.begin(),addr_type);
-            dbSrv.db_ops->save_uaddr_out(addr_id,txout_id);
-            }
-    }
+     
+    dbSaveTx(tx);
 
     dbSrv.db_ops->commit();
 
-    return tx_id;
-    }
+    return 0; 
+ 
+}
 
-int dbRemoveUTx(const CTransaction &tx)
+int dbRemoveTx(const CTransaction &tx)
     {
     uint256 hash = tx.GetHash();
-    int txid = dbSrv.db_ops->query_utx(hash.begin());
+    int txid = dbSrv.db_ops->query_tx(hash.begin());
     if (txid == -1)
-        LogPrint("dblayer", "dbRemoveUTx: utx not in database \n");
+        LogPrint("dblayer", "dbRemoveTx: tx not in database \n");
        
-    dbSrv.db_ops->delete_utx(txid);
+    if (dbSrv.db_ops->begin() == -1)
+        {
+        dbSrv.db_ops->rollback();
+        LogPrint("dblayer", "dbRemoveTx roll back: %s \n", tx.GetHash().ToString());
+        return -1; 
+        }
+ 
+    dbSrv.db_ops->delete_tx(txid);
+
+    dbSrv.db_ops->commit();
     return 0;
     }
-
-int dbSyncTx(const CTransaction &tx)
-    {
-    uint256 hash = tx.GetHash();
-    const int32_t version = tx.nVersion;
-    const uint32_t lock_time = tx.nLockTime;
-    bool coinbase = tx.IsCoinBase();
-    unsigned int tx_size = ::GetSerializeSize(tx, SER_NETWORK, PROTOCOL_VERSION);
-    uint256 nhash = 0;
-
-    int tx_id = dbSrv.db_ops->save_tx(hash.begin(), version, lock_time, coinbase, tx_size, nhash.begin());
-
-    INDEX_FOREACH(tx_idx, const CTxIn&txin, tx.vin) {
-        CTransaction txp;
-        uint256 hashBlockp = 0;
-        int prev_out_index = txin.prevout.n;
-        uint256 prev_out = txin.prevout.hash;
-        int p2sh_type = 0;
-
-        if (GetTransaction(txin.prevout.hash, txp, hashBlockp, true))
-            {
-            const CTxOut& txoutp =  txp.vout[txin.prevout.n];
-            CScript script_sig = txoutp.scriptPubKey;
-            }
-        dbSrv.db_ops->save_txin(tx_id, tx_idx, prev_out_index, txin.nSequence, &txin.scriptSig[0], txin.scriptSig.size(), prev_out.begin(),p2sh_type);
-    }
-
-    for (unsigned int i = 0; i < tx.vout.size(); i++) {
-        const CTxOut& txout = tx.vout[i];
-
-        txnouttype txout_type;
-        vector<CTxDestination> addresses;
-        int nRequired;
-
-        if (!ExtractDestinations(txout.scriptPubKey, txout_type, addresses, nRequired)) {
-            LogPrint("dblayer", "save txout  error: \n");
-        }
-
-        int txout_id = dbSrv.db_ops->save_txout(tx_id, i, &txout.scriptPubKey[0], txout.scriptPubKey.size(), txout.nValue, txout_type);
-
-        BOOST_FOREACH(const CTxDestination& addr, addresses)
-            {
-            int addr_type = 0;
-            int addr_id = dbSrv.db_ops->save_addr(CBitcoinAddress(addr).ToString().c_str() ,addr_type);
-            dbSrv.db_ops->save_addr_out(addr_id,txout_id);
-            }
-    }
-    return tx_id;
-    }
+ 
 
 int dbSync()
     {

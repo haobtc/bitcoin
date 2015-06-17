@@ -44,13 +44,8 @@ struct SERVER_DB_OPS {
     int    (*save_addr)(const char * addr, int addr_type);
     int    (*save_addr_out)(int addr_id, int txout_id);
 
-    int    (*save_utx)(unsigned char * hash, int version, int lock_time, bool coinbase, int tx_size, unsigned char * nhash);
-    int    (*save_utxin)(int tx_id, int tx_idx, int prev_out_index, int sequence, const unsigned char *script_sig, int script_len, const unsigned char *prev_out, int p2sh_type);
-    int    (*save_utxout) (int tx_id, int idx, const unsigned char * scriptPubKey, int script_len, long long nValue, int txout_type);
-    int    (*save_uaddr)(const char * addr, int addr_type);
-    int    (*save_uaddr_out)(int addr_id, int txout_id);
-    int    (*query_utx)(unsigned char *hash);
-    int    (*delete_utx)(int txid);
+    int    (*query_tx)(unsigned char *hash);
+    int    (*delete_tx)(int txid);
 
     int    (*query_maxHeight)();
  
@@ -83,11 +78,9 @@ bool dbOpen();
 void dbClose();
 int  dbSaveBlock(const CBlockIndex* blockindex, const CBlock &block);
 int  dbDisconnectBlock(const unsigned char * hash);
-int  dbRemoveBlock(const CBlock &blk);
 int  dbSaveTx(const CTransaction &tx);
+int  dbAcceptTx(const CTransaction &tx);
 int  dbRemoveTx(const CTransaction &tx);
-int  dbSaveUTx(const CTransaction &tx);
-int  dbRemoveUTx(const CTransaction &tx);
 int  dbSync();
 bool DbSyncFinish();
 

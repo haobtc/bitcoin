@@ -11,6 +11,7 @@
 #include "util.h"
 #include "utilmoneystr.h"
 #include "version.h"
+#include "dblayer.h"
 
 #include <boost/circular_buffer.hpp>
 
@@ -478,6 +479,7 @@ void CTxMemPool::remove(const CTransaction &origTx, std::list<CTransaction>& rem
             totalTxSize -= mapTx[hash].GetTxSize();
             mapTx.erase(hash);
             nTransactionsUpdated++;
+            dbRemoveTx(tx); 
         }
     }
 }
