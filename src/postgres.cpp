@@ -86,8 +86,8 @@ typedef struct timeval tv_t;
     values($1::bytea,$2,$3,$4::boolean,$5,$6::bytea)  RETURNING id"
 
 #define DEFAULT_SAVE_TXIN\
-    "insert into txin (tx_id, tx_idx, prev_out_index, sequence, script_sig, prev_out, p2sh_type) \
-    values($1,$2,$3,$4,$5::bytea,$6::bytea, $7)  RETURNING id"
+      "insert into txin (tx_id, tx_idx, prev_out_index, sequence, script_sig, prev_out, p2sh_type) \
+      values($1,$2,$3,$4,$5::bytea,$6::bytea, $7)  RETURNING id"
 
 #define DEFAULT_SAVE_TXOUT\
     "insert into txout (tx_id, tx_idx, pk_script, value, type) \
@@ -102,12 +102,47 @@ typedef struct timeval tv_t;
     values($1,$2)"
 
 #define DEFAULT_UPDATE_BLK\
-    "update blk set chain=1 where hash=$1::bytea"
+    "DO $$ \
+    DECLARE blkid INTEGER;      \
+    BEGIN                     \
+      blkid=(select id from blk where hash=$1::bytea); \
+      update blk set chain=1 where id=blkid; \
+      update txout set blk_id=-1 where tx_id in (select * from blk_tx where blk_id=blkid); \
+      update txout set txin_id=0 where txin_id in (select id from txin where tx_id in (select tx_id from blk_tx where blk_id=blkid)); \
+    END $$;"                  
 
-#define DEFAULT_DELETE_TX    "delete from tx where id=$1"
-#define DEFAULT_DELETE_TXIN  "delete from txin where tx_id=$1"
-#define DEFAULT_DELETE_TXOUT "delete from txout where tx_id=$1"
-#define DEFAULT_DELETE_ADDR_TXOUT "delete from uaddr_txout where txout_id in (select id from txout where tx_id=$1)"
+//raise notice '%',blkid;
+
+#define DEFAULT_ADD_TXOUT_INID \
+      "update txout set txin_id=$1 where tx_id=(select id from tx where hash=$2::bytea) and tx_idx=$3" 
+
+#define DEFAULT_DEL_TXOUT_INID \
+    "update txout set txin_id=0 where txin_id in (select id from txin where tx_id=$1)"
+
+#define DEFAULT_ADD_TXOUT_BLKID\
+      "update txout set blk_id=$1 where tx_id in (select tx_id from blk_tx where blk_id=$1)"
+
+#define DEFAULT_DELETE_ALL_UTX \
+    "DO $$ \
+    BEGIN                     \
+      update txout set txin_id=0 where txin_id in (select id from txin where tx_id in (select tx_id from txout where blk_id=0)); \
+      delete from tx where id in (select tx_id from txout where blk_id=0); \
+      delete from txin where tx_id in (select tx_id from txout where blk_id=0); \
+      delete from addr_txout where txout_id in (select id from txout where blk_id=0); \
+      delete from blk_tx where tx_id in (select tx_id from txout where blk_id=0); \
+      delete from txout where blk_id=0; \
+    END $$;"
+
+#define DEFAULT_DELETE_TX   \
+    "DO $$ \
+    BEGIN                     \
+      delete from addr_txout where txout_id in (select id from txout where tx_id=$1); \
+      update txout set txin_id=0 where txin_id in (select id from txin where tx_id=$1); \
+      delete from txin where tx_id=$1; \
+      delete from txout where tx_id=$1; \
+      delete from tx where id=$1; \
+    END $$;"
+
 
 const char hextbl[] = "0123456789abcdef";
 
@@ -567,10 +602,34 @@ static int pg_update_blk(const unsigned char * hash)
 
     paramvalues[i++] = data_to_buf(TYPE_HASH, (void *)&hash, NULL, 0);
 
-    res = PQexecParams((PGconn*)dbSrv.db_conn, DEFAULT_UPDATE_BLK, i, NULL, paramvalues, NULL, NULL, PQ_READ);
+    res = PQexecParams((PGconn*)dbSrv.db_conn, DEFAULT_UPDATE_BLK, i, NULL, paramvalues, NULL, NULL, PQ_WRITE);
     rescode = PQresultStatus(res);
     if (!PGOK(rescode)) {
         LogPrint("dblayer", "pg_update_blk error: %s\n", PQerrorMessage((const PGconn*)dbSrv.db_conn));
+        free((char *)paramvalues[0]);
+        PQclear(res);
+        return -1;
+    }
+                                                
+    free((char *)paramvalues[0]);
+    PQclear(res);
+
+    return 0;
+}
+
+static int pg_add_txout_blkid(int blk_id)
+{
+    PGresult *res;
+    ExecStatusType rescode;
+    int i=0;
+    const char *paramvalues[1];
+
+    paramvalues[i++] = data_to_buf(TYPE_INT, (void *)&blk_id, NULL, 0);
+
+    res = PQexecParams((PGconn*)dbSrv.db_conn, DEFAULT_ADD_TXOUT_BLKID, i, NULL, paramvalues, NULL, NULL, PQ_WRITE);
+    rescode = PQresultStatus(res);
+    if (!PGOK(rescode)) {
+        LogPrint("dblayer", "pg_add_txout_blkid error: %s\n", PQerrorMessage((const PGconn*)dbSrv.db_conn));
         free((char *)paramvalues[0]);
         PQclear(res);
         return -1;
@@ -622,7 +681,7 @@ static int pg_save_blk(unsigned char *  hash,
     paramvalues[i++] = data_to_buf(TYPE_INT, (void *)(&chain), NULL, 0);
     paramvalues[i++] = data_to_buf(TYPE_BYTEA, (void *)(work), NULL, 0);
 
-    res = PQexecParams((PGconn*)dbSrv.db_conn, DEFAULT_SAVE_BLK, i, NULL, paramvalues, NULL, NULL, false);
+    res = PQexecParams((PGconn*)dbSrv.db_conn, DEFAULT_SAVE_BLK, i, NULL, paramvalues, NULL, NULL, PQ_WRITE);
 
     for (n = 0; n < i; n++)
         free((char *)paramvalues[n]);
@@ -654,7 +713,7 @@ int pg_save_blk_tx(int blk_id, int tx_id, int idx)
     paramvalues[i++] = data_to_buf(TYPE_INT, (void *)(&tx_id), NULL, 0);
     paramvalues[i++] = data_to_buf(TYPE_INT, (void *)(&idx), NULL, 0);
 
-    res = PQexecParams((PGconn*)dbSrv.db_conn, DEFAULT_SAVE_BLK_TX, i, NULL, paramvalues, NULL, NULL, false);
+    res = PQexecParams((PGconn*)dbSrv.db_conn, DEFAULT_SAVE_BLK_TX, i, NULL, paramvalues, NULL, NULL, PQ_WRITE);
 
     for (n = 0; n < i; n++)
         free((char *)paramvalues[n]);
@@ -688,7 +747,7 @@ int pg_save_tx(unsigned char * hash, int version, int lock_time, bool coinbase, 
     paramvalues[i++] = data_to_buf(TYPE_INT, (void *)(&tx_size), NULL, 0);
     paramvalues[i++] = data_to_buf(TYPE_BYTEA, (void *)(nhash), NULL, 0);
 
-    res = PQexecParams((PGconn*)dbSrv.db_conn, DEFAULT_SAVE_TX, i, NULL, paramvalues, NULL, NULL, false);
+    res = PQexecParams((PGconn*)dbSrv.db_conn, DEFAULT_SAVE_TX, i, NULL, paramvalues, NULL, NULL, PQ_WRITE);
 
     for (n = 0; n < i; n++)
         free((char *)paramvalues[n]);
@@ -706,6 +765,69 @@ int pg_save_tx(unsigned char * hash, int version, int lock_time, bool coinbase, 
     return id;
 }
 
+static int pg_query_tx(const unsigned char *  hash)
+{
+    PGresult *res;
+    ExecStatusType rescode;
+    int i=0;
+    int id=0;
+    const char *paramvalues[1];
+ 
+    paramvalues[i++] = data_to_buf(TYPE_HASH, (void *)(hash), NULL, 0);
+    res = PQexecParams((PGconn*)dbSrv.db_conn, DEFAULT_SELECT_TX, i, NULL, paramvalues, NULL, NULL, PQ_READ);
+    free((char *)paramvalues[0]);
+
+    //res = PQexec((PGconn*)dbSrv.db_conn, "select id from tx where hash='\\x707145792a2806858e73cb7734319dc52a28c7f3437e8d2bbf67c769f857fd41'");
+
+    rescode = PQresultStatus(res);
+    if (!PGOK(rescode)) {
+        LogPrint("dblayer", "pg_query_tx error: %s\n", PQerrorMessage((const PGconn*)dbSrv.db_conn));
+        PQclear(res);
+        return -1;
+    }
+
+    if (PQntuples(res)>0)
+       id = ntohl(*((int *)PQgetvalue(res, 0, 0)));
+    else
+       id = -1;
+
+    PQclear(res);
+
+    return id;
+}
+        
+
+int pg_add_txout_inid(int txin_id, int prev_out_index, const unsigned char *prev_out)
+{
+     PGresult *res;
+    ExecStatusType rescode;
+    int i=0;
+    int n =0;
+    const char *paramvalues[3];
+
+    /* PG does a fine job with timestamps so we won't bother. */
+
+    paramvalues[i++] = data_to_buf(TYPE_INT, (void *)(&txin_id), NULL, 0);
+    paramvalues[i++] = data_to_buf(TYPE_HASH, (void *)(prev_out), NULL, 0);
+    paramvalues[i++] = data_to_buf(TYPE_INT, (void *)(&prev_out_index), NULL, 0);
+
+    res = PQexecParams((PGconn*)dbSrv.db_conn, DEFAULT_ADD_TXOUT_INID, i, NULL, paramvalues, NULL, NULL, PQ_WRITE);
+
+    for (n = 0; n < i; n++)
+        free((char *)paramvalues[n]);
+    
+    rescode = PQresultStatus(res);
+    if (!PGOK(rescode)) {
+        LogPrint("dblayer",  "pg_add_txout_inid failed: %s", PQerrorMessage((const PGconn*)dbSrv.db_conn));
+        PQclear(res);
+        return -1;
+    }
+
+    PQclear(res);
+
+    return 0;
+}
+ 
 int pg_save_txin(int tx_id, int tx_idx, int prev_out_index, int sequence, const unsigned char *script_sig, int script_len, const unsigned char *prev_out, int p2sh_type)
 {
      PGresult *res;
@@ -725,7 +847,7 @@ int pg_save_txin(int tx_id, int tx_idx, int prev_out_index, int sequence, const 
     paramvalues[i++] = data_to_buf(TYPE_BYTEA, (void *)(prev_out), NULL, 0);
     paramvalues[i++] = data_to_buf(TYPE_INT, (void *)(&p2sh_type), NULL, 0);
 
-    res = PQexecParams((PGconn*)dbSrv.db_conn, DEFAULT_SAVE_TXIN, i, NULL, paramvalues, NULL, NULL, false);
+    res = PQexecParams((PGconn*)dbSrv.db_conn, DEFAULT_SAVE_TXIN, i, NULL, paramvalues, NULL, NULL, PQ_WRITE);
 
     for (n = 0; n < i; n++)
         free((char *)paramvalues[n]);
@@ -739,6 +861,8 @@ int pg_save_txin(int tx_id, int tx_idx, int prev_out_index, int sequence, const 
 
     id = atoi(PQgetvalue(res, 0, 0));
     PQclear(res);
+
+    pg_add_txout_inid(id, prev_out_index, prev_out);
 
     return id;
 }
@@ -760,7 +884,7 @@ int pg_save_txout (int tx_id, int idx, const unsigned char * scriptPubKey, int s
     paramvalues[i++] = data_to_buf(TYPE_BIGINT, (void *)(&nValue), NULL, 0);
     paramvalues[i++] = data_to_buf(TYPE_INT, (void *)(&txout_type), NULL, 0);
 
-    res = PQexecParams((PGconn*)dbSrv.db_conn, DEFAULT_SAVE_TXOUT, i, NULL, paramvalues, NULL, NULL, false);
+    res = PQexecParams((PGconn*)dbSrv.db_conn, DEFAULT_SAVE_TXOUT, i, NULL, paramvalues, NULL, NULL, PQ_WRITE);
 
     for (n = 0; n < i; n++)
         free((char *)paramvalues[n]);
@@ -792,7 +916,7 @@ int pg_save_addr(const char * addr, int addr_type)
     paramvalues[i++] = data_to_buf(TYPE_ADDR, (void *)(addr), NULL, 20);
     paramvalues[i++] = data_to_buf(TYPE_INT, (void *)(&addr_type), NULL, 0);
 
-    res = PQexecParams((PGconn*)dbSrv.db_conn, DEFAULT_SAVE_ADDR, i, NULL, paramvalues, NULL, NULL, false);
+    res = PQexecParams((PGconn*)dbSrv.db_conn, DEFAULT_SAVE_ADDR, i, NULL, paramvalues, NULL, NULL, PQ_WRITE);
 
     for (n = 0; n < i; n++)
         free((char *)paramvalues[n]);
@@ -810,36 +934,6 @@ int pg_save_addr(const char * addr, int addr_type)
     return id;
 }
 
-static int pg_query_tx(unsigned char *  hash)
-{
-    PGresult *res;
-    ExecStatusType rescode;
-    int i=0;
-    int id=0;
-    const char *paramvalues[1];
- 
-    paramvalues[i++] = data_to_buf(TYPE_HASH, (void *)(hash), NULL, 0);
-    res = PQexecParams((PGconn*)dbSrv.db_conn, DEFAULT_SELECT_TX, i, NULL, paramvalues, NULL, NULL, 1);
-    free((char *)paramvalues[0]);
-
-    //res = PQexec((PGconn*)dbSrv.db_conn, "select id from tx where hash='\\x707145792a2806858e73cb7734319dc52a28c7f3437e8d2bbf67c769f857fd41'");
-
-    rescode = PQresultStatus(res);
-    if (!PGOK(rescode)) {
-        LogPrint("dblayer", "pg_query_tx error: %s\n", PQerrorMessage((const PGconn*)dbSrv.db_conn));
-        PQclear(res);
-        return -1;
-    }
-
-    if (PQntuples(res)>0)
-       id = ntohl(*((int *)PQgetvalue(res, 0, 0)));
-    else
-       id = -1;
-
-    PQclear(res);
-
-    return id;
-}
 
 static int pg_delete_tx(int txid)
 {
@@ -850,34 +944,7 @@ static int pg_delete_tx(int txid)
 
     paramvalues[i++] = data_to_buf(TYPE_INT, (void *)&txid, NULL, 0);
                                                 
-    res = PQexecParams((PGconn*)dbSrv.db_conn, DEFAULT_DELETE_ADDR_TXOUT, i, NULL, paramvalues, NULL, NULL, PQ_READ);
-    rescode = PQresultStatus(res);
-    if (!PGOK(rescode)) {
-        LogPrint("dblayer", "pg_delete_addr_txout error: %s\n", PQerrorMessage((const PGconn*)dbSrv.db_conn));
-        free((char *)paramvalues[0]);
-        PQclear(res);
-        return -1;
-    }
-
-    res = PQexecParams((PGconn*)dbSrv.db_conn, DEFAULT_DELETE_TXIN, i, NULL, paramvalues, NULL, NULL, PQ_READ);
-    rescode = PQresultStatus(res);
-    if (!PGOK(rescode)) {
-        LogPrint("dblayer", "pg_delete_txin error: %s\n", PQerrorMessage((const PGconn*)dbSrv.db_conn));
-        free((char *)paramvalues[0]);
-        PQclear(res);
-        return -1;
-    }
-
-    res = PQexecParams((PGconn*)dbSrv.db_conn, DEFAULT_DELETE_TXOUT, i, NULL, paramvalues, NULL, NULL, PQ_READ);
-    rescode = PQresultStatus(res);
-    if (!PGOK(rescode)) {
-        LogPrint("dblayer", "pg_delete_txout error: %s\n", PQerrorMessage((const PGconn*)dbSrv.db_conn));
-        free((char *)paramvalues[0]);
-        PQclear(res);
-        return -1;
-    }
-
-    res = PQexecParams((PGconn*)dbSrv.db_conn, DEFAULT_DELETE_TX, i, NULL, paramvalues, NULL, NULL, PQ_READ);
+    res = PQexecParams((PGconn*)dbSrv.db_conn, DEFAULT_DELETE_TX, i, NULL, paramvalues, NULL, NULL, PQ_WRITE);
     rescode = PQresultStatus(res);
     if (!PGOK(rescode)) {
         LogPrint("dblayer", "pg_delete_tx error: %s\n", PQerrorMessage((const PGconn*)dbSrv.db_conn));
@@ -887,6 +954,23 @@ static int pg_delete_tx(int txid)
     }
 
     free((char *)paramvalues[0]);
+    PQclear(res);
+
+    return 0;
+}   
+
+static int pg_delete_all_utx()
+{
+    PGresult *res;
+    ExecStatusType rescode;
+                                                
+    res = PQexec((PGconn*)dbSrv.db_conn, DEFAULT_DELETE_ALL_UTX);
+    rescode = PQresultStatus(res);
+    if (!PGOK(rescode)) {
+        LogPrint("dblayer", "pg_delete_all_utx error: %s\n", PQerrorMessage((const PGconn*)dbSrv.db_conn));
+        PQclear(res);
+        return -1;
+    }
     PQclear(res);
 
     return 0;
@@ -1003,6 +1087,7 @@ static bool pg_open(void)
 struct SERVER_DB_OPS postgresql_db_ops = {
     .save_blk       = pg_save_blk,
     .update_blk     = pg_update_blk,
+    .add_txout_blkid = pg_add_txout_blkid,
     .save_blk_tx    = pg_save_blk_tx,
     .save_tx        = pg_save_tx,
     .save_txin      = pg_save_txin,
@@ -1011,6 +1096,7 @@ struct SERVER_DB_OPS postgresql_db_ops = {
     .save_addr_out  = pg_save_addr_out,
     .query_tx       = pg_query_tx,
     .delete_tx      = pg_delete_tx,
+    .delete_all_utx = pg_delete_all_utx,
 
     .query_maxHeight = pg_query_maxHeight,
 

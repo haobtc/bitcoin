@@ -108,7 +108,8 @@ int dbSaveTx(const CTransaction &tx)
                 const CTxOut& txoutp =  txp.vout[txin.prevout.n];
                 CScript script_sig = txoutp.scriptPubKey;
                 }
-            if (dbSrv.db_ops->save_txin(tx_id, tx_idx, prev_out_index, txin.nSequence, &txin.scriptSig[0], txin.scriptSig.size(), prev_out.begin(),p2sh_type) == -1){
+            int txin_id = dbSrv.db_ops->save_txin(tx_id, tx_idx, prev_out_index, txin.nSequence, &txin.scriptSig[0], txin.scriptSig.size(), prev_out.begin(),p2sh_type);
+            if (txin_id == -1){
                 LogPrint("dblayer", "save_txin error txid %d txin index %d \n", tx_id ,tx_idx);
             }
         }
@@ -121,7 +122,7 @@ int dbSaveTx(const CTransaction &tx)
             int nRequired;
 
             if (!ExtractDestinations(txout.scriptPubKey, txout_type, addresses, nRequired)) {
-                LogPrint("dblayer", "ExtractDestinations error: \n");
+                //LogPrint("dblayer", "ExtractDestinations error: \n");
             }
 
             int txout_id = dbSrv.db_ops->save_txout(tx_id, i, &txout.scriptPubKey[0], txout.scriptPubKey.size(), txout.nValue, txout_type);
@@ -201,13 +202,15 @@ int dbSaveBlock(const CBlockIndex* blockindex, const CBlock &block)
 
     INDEX_FOREACH(idx, const CTransaction&tx, block.vtx) {
         int tx_id = dbSaveTx(tx);
-        if (blk_id == -1) {
+        if (tx_id == -1) {
            LogPrint("dblayer", "tx save fail block height: %d,  txhash: %s \n", height, tx.GetHash().ToString());
            dbSrv.db_ops->rollback();
            return -1; 
            }
         dbSrv.db_ops->save_blk_tx(blk_id, tx_id, idx);
     }
+
+    dbSrv.db_ops->add_txout_blkid(blk_id);
 
     dbSrv.db_ops->commit();
 
@@ -260,6 +263,9 @@ int dbSync()
 
     CBlock block;
     CBlockIndex* pblockindex;
+
+    //delete all unconfirmed tx
+    dbSrv.db_ops->delete_all_utx();
 
     // syndb
     if (maxHeight < chainActive.Height()) {

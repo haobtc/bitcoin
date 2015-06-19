@@ -37,6 +37,7 @@ struct SERVER_DB_OPS {
                              unsigned char *  work);
 
     int    (*update_blk)(const unsigned char *  hash);
+    int    (*add_txout_blkid)(int blk_id);
     int    (*save_blk_tx)(int blk_id, int tx_id, int idx);
     int    (*save_tx)(unsigned char * hash, int version, int lock_time, bool coinbase, int tx_size, unsigned char * nhash);
     int    (*save_txin)(int tx_id, int tx_idx, int prev_out_index, int sequence, const unsigned char *script_sig, int script_len, const unsigned char *prev_out, int p2sh_type);
@@ -44,8 +45,9 @@ struct SERVER_DB_OPS {
     int    (*save_addr)(const char * addr, int addr_type);
     int    (*save_addr_out)(int addr_id, int txout_id);
 
-    int    (*query_tx)(unsigned char *hash);
+    int    (*query_tx)(const unsigned char *hash);
     int    (*delete_tx)(int txid);
+    int    (*delete_all_utx)();
 
     int    (*query_maxHeight)();
  
