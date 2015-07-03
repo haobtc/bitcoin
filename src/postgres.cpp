@@ -106,38 +106,29 @@ typedef struct timeval tv_t;
     DECLARE blkid INTEGER;      \
     BEGIN                     \
       blkid=(select id from blk where hash=$1::bytea); \
-      update blk set chain=1 where id=blkid; \
-      update txout set blk_id=-1 where tx_id in (select * from blk_tx where blk_id=blkid); \
-      update txout set txin_id=0 where txin_id in (select id from txin where tx_id in (select tx_id from blk_tx where blk_id=blkid)); \
+      delete from blk_tx where blk_id=blkid; \
+      delete from blk where id=blkid;    \
     END $$;"                  
+//      update blk set chain=1 where id=blkid; \
 
 //raise notice '%',blkid;
 
-#define DEFAULT_ADD_TXOUT_INID \
-      "update txout set txin_id=$1 where tx_id=(select id from tx where hash=$2::bytea) and tx_idx=$3" 
-
-#define DEFAULT_DEL_TXOUT_INID \
-    "update txout set txin_id=0 where txin_id in (select id from txin where tx_id=$1)"
-
-#define DEFAULT_ADD_TXOUT_BLKID\
-      "update txout set blk_id=$1 where tx_id in (select tx_id from blk_tx where blk_id=$1)"
-
 #define DEFAULT_DELETE_ALL_UTX \
-    "DO $$ \
-    BEGIN                     \
-      update txout set txin_id=0 where txin_id in (select id from txin where tx_id in (select tx_id from txout where blk_id=0)); \
-      delete from tx where id in (select tx_id from txout where blk_id=0); \
-      delete from txin where tx_id in (select tx_id from txout where blk_id=0); \
-      delete from addr_txout where txout_id in (select id from txout where blk_id=0); \
-      delete from blk_tx where tx_id in (select tx_id from txout where blk_id=0); \
-      delete from txout where blk_id=0; \
+    "DO $$                                        \
+    DECLARE did INT;                              \
+    BEGIN                                         \
+      FOR did IN select id from utx LOOP          \
+      delete from tx where id=did;                \
+      delete from txin where tx_id=did;           \
+      delete from addr_txout where txout_id=did;  \
+      delete from blk_tx where tx_id=did;         \
+      END LOOP;                                   \
     END $$;"
 
 #define DEFAULT_DELETE_TX   \
     "DO $$ \
     BEGIN                     \
       delete from addr_txout where txout_id in (select id from txout where tx_id=$1); \
-      update txout set txin_id=0 where txin_id in (select id from txin where tx_id=$1); \
       delete from txin where tx_id=$1; \
       delete from txout where tx_id=$1; \
       delete from tx where id=$1; \
@@ -617,30 +608,6 @@ static int pg_update_blk(const unsigned char * hash)
     return 0;
 }
 
-static int pg_add_txout_blkid(int blk_id)
-{
-    PGresult *res;
-    ExecStatusType rescode;
-    int i=0;
-    const char *paramvalues[1];
-
-    paramvalues[i++] = data_to_buf(TYPE_INT, (void *)&blk_id, NULL, 0);
-
-    res = PQexecParams((PGconn*)dbSrv.db_conn, DEFAULT_ADD_TXOUT_BLKID, i, NULL, paramvalues, NULL, NULL, PQ_WRITE);
-    rescode = PQresultStatus(res);
-    if (!PGOK(rescode)) {
-        LogPrint("dblayer", "pg_add_txout_blkid error: %s\n", PQerrorMessage((const PGconn*)dbSrv.db_conn));
-        free((char *)paramvalues[0]);
-        PQclear(res);
-        return -1;
-    }
-                                                
-    free((char *)paramvalues[0]);
-    PQclear(res);
-
-    return 0;
-}
-
 static int pg_save_blk(unsigned char *  hash, 
                        int              height,
                        int              version, 
@@ -795,39 +762,8 @@ static int pg_query_tx(const unsigned char *  hash)
 
     return id;
 }
-        
 
-int pg_add_txout_inid(int txin_id, int prev_out_index, const unsigned char *prev_out)
-{
-     PGresult *res;
-    ExecStatusType rescode;
-    int i=0;
-    int n =0;
-    const char *paramvalues[3];
 
-    /* PG does a fine job with timestamps so we won't bother. */
-
-    paramvalues[i++] = data_to_buf(TYPE_INT, (void *)(&txin_id), NULL, 0);
-    paramvalues[i++] = data_to_buf(TYPE_HASH, (void *)(prev_out), NULL, 0);
-    paramvalues[i++] = data_to_buf(TYPE_INT, (void *)(&prev_out_index), NULL, 0);
-
-    res = PQexecParams((PGconn*)dbSrv.db_conn, DEFAULT_ADD_TXOUT_INID, i, NULL, paramvalues, NULL, NULL, PQ_WRITE);
-
-    for (n = 0; n < i; n++)
-        free((char *)paramvalues[n]);
-    
-    rescode = PQresultStatus(res);
-    if (!PGOK(rescode)) {
-        LogPrint("dblayer",  "pg_add_txout_inid failed: %s", PQerrorMessage((const PGconn*)dbSrv.db_conn));
-        PQclear(res);
-        return -1;
-    }
-
-    PQclear(res);
-
-    return 0;
-}
- 
 int pg_save_txin(int tx_id, int tx_idx, int prev_out_index, int sequence, const unsigned char *script_sig, int script_len, const unsigned char *prev_out, int p2sh_type)
 {
      PGresult *res;
@@ -861,8 +797,6 @@ int pg_save_txin(int tx_id, int tx_idx, int prev_out_index, int sequence, const 
 
     id = atoi(PQgetvalue(res, 0, 0));
     PQclear(res);
-
-    pg_add_txout_inid(id, prev_out_index, prev_out);
 
     return id;
 }
@@ -1087,7 +1021,6 @@ static bool pg_open(void)
 struct SERVER_DB_OPS postgresql_db_ops = {
     .save_blk       = pg_save_blk,
     .update_blk     = pg_update_blk,
-    .add_txout_blkid = pg_add_txout_blkid,
     .save_blk_tx    = pg_save_blk_tx,
     .save_tx        = pg_save_tx,
     .save_txin      = pg_save_txin,

@@ -210,9 +210,9 @@ int dbSaveBlock(const CBlockIndex* blockindex, const CBlock &block)
         dbSrv.db_ops->save_blk_tx(blk_id, tx_id, idx);
     }
 
-    dbSrv.db_ops->add_txout_blkid(blk_id);
-
     dbSrv.db_ops->commit();
+    
+    sleep(0);
 
     return 0; 
     }
