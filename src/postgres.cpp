@@ -74,8 +74,8 @@ typedef struct timeval tv_t;
 #define DEFAULT_SELECT_TX "select id from tx where hash=$1::bytea"
 
 #define DEFAULT_SAVE_BLK\
-    "insert into blk (hash, height, version, prev_hash, mrkl_root, time, bits, nonce, blk_size, chain, work) \
-    values($1::bytea,$2,$3,$4::bytea,$5::bytea,$6::bigint,$7,$8,$9,$10,$11::bytea) RETURNING id"
+    "insert into blk (hash, height, version, prev_hash, mrkl_root, time, bits, nonce, blk_size, chain, work, tx_count) \
+    values($1::bytea,$2,$3,$4::bytea,$5::bytea,$6::bigint,$7,$8,$9,$10,$11::bytea, $12) RETURNING id"
 
 #define DEFAULT_SAVE_BLK_TX\
     "insert into blk_tx (blk_id, tx_id, idx) \
@@ -84,6 +84,12 @@ typedef struct timeval tv_t;
 #define DEFAULT_SAVE_TX\
     "insert into tx (hash, version, lock_time, coinbase, tx_size, nhash) \
     values($1::bytea,$2,$3,$4::boolean,$5,$6::bytea)  RETURNING id"
+
+#define DEFAULT_SAVE_UTX\
+    "INSERT INTO utx (id) values ($1);" 
+    //"with inserted as (insert into tx (hash, version, lock_time, coinbase, tx_size, nhash) \
+    //values($1::bytea,$2,$3,$4::boolean,$5,$6::bytea)  RETURNING id) \
+    //INSERT INTO utx (id) SELECT id FROM inserted RETURNING id;"
 
 #define DEFAULT_SAVE_TXIN\
       "insert into txin (tx_id, tx_idx, prev_out_index, sequence, script_sig, prev_out, p2sh_type) \
@@ -94,46 +100,60 @@ typedef struct timeval tv_t;
     values($1,$2,$3::bytea,$4,$5) RETURNING id"
 
 #define DEFAULT_SAVE_ADDR\
-    "insert into addr (hash160, type) \
-    values($1,$2) RETURNING id"
+    "select insert_addr($1,$2);"
+//    "insert into addr (hash160, type) \
+//    values($1,$2) RETURNING id"
 
 #define DEFAULT_SAVE_ADDR_OUT\
     "insert into addr_txout (addr_id, txout_id) \
     values($1,$2)"
 
+#define DEFAULT_ADD_TX_STATICS\
+    "select add_tx_statics($1,$2,$3,$4,$5);"
+
+#define DEFAULT_ADD_BLK_STATICS\
+    "select add_blk_statics($1);"
+
 #define DEFAULT_UPDATE_BLK\
-    "DO $$ \
-    DECLARE blkid INTEGER;      \
-    BEGIN                     \
-      blkid=(select id from blk where hash=$1::bytea); \
-      delete from blk_tx where blk_id=blkid; \
-      delete from blk where id=blkid;    \
-    END $$;"                  
+    "select delete_blk($1::bytea);"
+//    "DO $$ \
+//    DECLARE blkid INTEGER;      \
+//    BEGIN                     \
+//      blkid=(select id from blk where hash=$1::bytea); \
+//      delete from blk_tx where blk_id=blkid; \
+//      delete from blk where id=blkid;    \
+//    END $$;"                  
 //      update blk set chain=1 where id=blkid; \
 
 //raise notice '%',blkid;
 
 #define DEFAULT_DELETE_ALL_UTX \
-    "DO $$                                        \
-    DECLARE did INT;                              \
-    BEGIN                                         \
-      FOR did IN select id from utx LOOP          \
-      delete from tx where id=did;                \
-      delete from txin where tx_id=did;           \
-      delete from addr_txout where txout_id=did;  \
-      delete from blk_tx where tx_id=did;         \
-      END LOOP;                                   \
-    END $$;"
+    "select delete_all_utx();"
+//    "DO $$                                        \
+//    DECLARE did INT;                              \
+//    BEGIN                                         \
+//      FOR did IN select id from utx LOOP          \
+//      delete from tx where id=did;                \
+//      delete from txin where tx_id=did;           \
+//      delete from addr_txout where txout_id=did;  \
+//      delete from blk_tx where tx_id=did;         \
+//      END LOOP;                                   \
+//    END $$;"
 
 #define DEFAULT_DELETE_TX   \
-    "DO $$ \
-    BEGIN                     \
-      delete from addr_txout where txout_id in (select id from txout where tx_id=$1); \
-      delete from txin where tx_id=$1; \
-      delete from txout where tx_id=$1; \
-      delete from tx where id=$1; \
-    END $$;"
+    "select delete_tx($1);"
+//    "DO $$ \
+//    DECLARE did INT;                              \
+//    BEGIN                     \
+//      did=($1::INTEGER);                              \
+//      delete from addr_txout where txout_id in (select id from txout where tx_id=did); \
+//      delete from txin where tx_id=did; \
+//      delete from txout where tx_id=did; \
+//      delete from tx where id=did; \
+//    END $$;"
 
+#define DEFAULT_UPDATE_ADDR_BALANCE \
+    "select update_balance($1, $2, $3);"
 
 const char hextbl[] = "0123456789abcdef";
 
@@ -608,6 +628,64 @@ static int pg_update_blk(const unsigned char * hash)
     return 0;
 }
 
+
+static int pg_add_tx_statics(int txid, int in_count, int out_count, long long in_value, long long out_value)
+{
+    PGresult *res;
+    ExecStatusType rescode;
+    int i=0;
+    int n=0;
+    const char *paramvalues[5];
+
+    paramvalues[i++] = data_to_buf(TYPE_INT, (void *)&txid, NULL, 0);
+    paramvalues[i++] = data_to_buf(TYPE_INT, (void *)&in_count, NULL, 0);
+    paramvalues[i++] = data_to_buf(TYPE_INT, (void *)&out_count, NULL, 0);
+    paramvalues[i++] = data_to_buf(TYPE_BIGINT, (void *)&in_value, NULL, 0);
+    paramvalues[i++] = data_to_buf(TYPE_BIGINT, (void *)&out_value, NULL, 0);
+
+    res = PQexecParams((PGconn*)dbSrv.db_conn, DEFAULT_ADD_TX_STATICS, i, NULL, paramvalues, NULL, NULL, PQ_WRITE);
+
+    for (n = 0; n < i; n++)
+        free((char *)paramvalues[n]);
+
+    rescode = PQresultStatus(res);
+    if (!PGOK(rescode)) {
+        LogPrint("dblayer", "pg_add_tx_statics error: %s\n", PQerrorMessage((const PGconn*)dbSrv.db_conn));
+        PQclear(res);
+        return -1;
+    }
+                                                
+    PQclear(res);
+
+    return 0;
+}
+
+static int pg_add_blk_statics(int blkid)
+{
+    PGresult *res;
+    ExecStatusType rescode;
+    int i=0;
+    const char *paramvalues[1];
+
+    paramvalues[i++] = data_to_buf(TYPE_INT, (void *)&blkid, NULL, 0);
+
+    res = PQexecParams((PGconn*)dbSrv.db_conn, DEFAULT_ADD_BLK_STATICS, i, NULL, paramvalues, NULL, NULL, PQ_WRITE);
+    rescode = PQresultStatus(res);
+    if (!PGOK(rescode)) {
+        LogPrint("dblayer", "pg_add_blk_statics error: %s\n", PQerrorMessage((const PGconn*)dbSrv.db_conn));
+        free((char *)paramvalues[0]);
+        PQclear(res);
+        return -1;
+    }
+                                                
+    free((char *)paramvalues[0]);
+    PQclear(res);
+
+    return 0;
+}
+
+
+
 static int pg_save_blk(unsigned char *  hash, 
                        int              height,
                        int              version, 
@@ -618,14 +696,15 @@ static int pg_save_blk(unsigned char *  hash,
                        int              nonce, 
                        int              blk_size, 
                        int              chain, 
-                       unsigned char *  work)
+                       unsigned char *  work,
+                       int              txnum) 
 {
     PGresult *res;
     ExecStatusType rescode;
     int i=0;
     int n=0;
     int id=0;
-    const char *paramvalues[11];
+    const char *paramvalues[12];
 
     //check if block in database
     if (pg_query_blk(hash)>0)
@@ -647,6 +726,7 @@ static int pg_save_blk(unsigned char *  hash,
     paramvalues[i++] = data_to_buf(TYPE_INT, (void *)(&blk_size), NULL, 0);
     paramvalues[i++] = data_to_buf(TYPE_INT, (void *)(&chain), NULL, 0);
     paramvalues[i++] = data_to_buf(TYPE_BYTEA, (void *)(work), NULL, 0);
+    paramvalues[i++] = data_to_buf(TYPE_INT, (void *)(&txnum), NULL, 0);
 
     res = PQexecParams((PGconn*)dbSrv.db_conn, DEFAULT_SAVE_BLK, i, NULL, paramvalues, NULL, NULL, PQ_WRITE);
 
@@ -731,6 +811,36 @@ int pg_save_tx(unsigned char * hash, int version, int lock_time, bool coinbase, 
 
     return id;
 }
+
+int pg_save_utx(int txid)
+{
+    PGresult *res;
+    ExecStatusType rescode;
+    int i = 0;
+    int id=0;
+    const char *paramvalues[1];
+
+    /* PG does a fine job with timestamps so we won't bother. */
+
+    paramvalues[i++] = data_to_buf(TYPE_INT, (void *)(&txid), NULL, 0);
+
+    res = PQexecParams((PGconn*)dbSrv.db_conn, DEFAULT_SAVE_UTX, i, NULL, paramvalues, NULL, NULL, PQ_WRITE);
+
+    free((char *)paramvalues[0]);
+
+    rescode = PQresultStatus(res);
+    if (!PGOK(rescode)) {
+        LogPrint("dblayer",  "pg_save_tx failed: %s", PQerrorMessage((const PGconn*)dbSrv.db_conn));
+        PQclear(res);
+        return -1;
+    }
+
+    PQclear(res);
+
+    return 0;
+}
+
+
 
 static int pg_query_tx(const unsigned char *  hash)
 {
@@ -868,6 +978,33 @@ int pg_save_addr(const char * addr, int addr_type)
     return id;
 }
 
+static int pg_update_addr_balance(const char * addr,long long value, bool inc)
+{
+    PGresult *res;
+    ExecStatusType rescode;
+    int i=0;
+    int n=0;
+    const char *paramvalues[3];
+
+    paramvalues[i++] = data_to_buf(TYPE_ADDR, (void *)(addr), NULL, 20);
+    paramvalues[i++] = data_to_buf(TYPE_BIGINT, (void *)(&value), NULL, 0);
+    paramvalues[i++] = data_to_buf(TYPE_INT, (void *)(&inc), NULL, 0);
+                                                
+    res = PQexecParams((PGconn*)dbSrv.db_conn, DEFAULT_UPDATE_ADDR_BALANCE, i, NULL, paramvalues, NULL, NULL, PQ_WRITE);
+
+    for (n = 0; n < i; n++)
+        free((char *)paramvalues[n]);
+
+    rescode = PQresultStatus(res);
+    PQclear(res);
+    if (!PGOK(rescode)) {
+        LogPrint("dblayer", "pg_update_addr_balance error: %s\n", PQerrorMessage((const PGconn*)dbSrv.db_conn));
+        return -1;
+    }
+
+    return 0;
+}   
+
 
 static int pg_delete_tx(int txid)
 {
@@ -876,7 +1013,7 @@ static int pg_delete_tx(int txid)
     int i=0;
     const char *paramvalues[1];
 
-    paramvalues[i++] = data_to_buf(TYPE_INT, (void *)&txid, NULL, 0);
+    paramvalues[i++] = data_to_buf(TYPE_INT, (void *)(&txid), NULL, 0);
                                                 
     res = PQexecParams((PGconn*)dbSrv.db_conn, DEFAULT_DELETE_TX, i, NULL, paramvalues, NULL, NULL, PQ_WRITE);
     rescode = PQresultStatus(res);
@@ -1021,12 +1158,16 @@ static bool pg_open(void)
 struct SERVER_DB_OPS postgresql_db_ops = {
     .save_blk       = pg_save_blk,
     .update_blk     = pg_update_blk,
+    .add_blk_statics= pg_add_blk_statics,
+    .add_tx_statics = pg_add_tx_statics,
     .save_blk_tx    = pg_save_blk_tx,
     .save_tx        = pg_save_tx,
+    .save_utx       = pg_save_utx,
     .save_txin      = pg_save_txin,
     .save_txout     = pg_save_txout,
     .save_addr      = pg_save_addr,   
     .save_addr_out  = pg_save_addr_out,
+    .update_addr_balance = pg_update_addr_balance,
     .query_tx       = pg_query_tx,
     .delete_tx      = pg_delete_tx,
     .delete_all_utx = pg_delete_all_utx,

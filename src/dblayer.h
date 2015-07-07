@@ -34,15 +34,21 @@ struct SERVER_DB_OPS {
                              int              nonce, 
                              int              blk_size, 
                              int              chain, 
-                             unsigned char *  work);
+                             unsigned char *  work,
+                             int              txnum);
 
     int    (*update_blk)(const unsigned char *  hash);
+    int    (*add_blk_statics)(int blkid);
+    int    (*add_tx_statics)(int txid, int in_count, int out_count, long long in_value, long long out_value);
     int    (*save_blk_tx)(int blk_id, int tx_id, int idx);
     int    (*save_tx)(unsigned char * hash, int version, int lock_time, bool coinbase, int tx_size, unsigned char * nhash);
+    int    (*save_utx)(int txid);
     int    (*save_txin)(int tx_id, int tx_idx, int prev_out_index, int sequence, const unsigned char *script_sig, int script_len, const unsigned char *prev_out, int p2sh_type);
     int    (*save_txout) (int tx_id, int idx, const unsigned char * scriptPubKey, int script_len, long long nValue, int txout_type);
     int    (*save_addr)(const char * addr, int addr_type);
     int    (*save_addr_out)(int addr_id, int txout_id);
+    int    (*update_addr_balance)(const char* hash160, long long value, bool inc);
+
 
     int    (*query_tx)(const unsigned char *hash);
     int    (*delete_tx)(int txid);
