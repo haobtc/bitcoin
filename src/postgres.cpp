@@ -988,7 +988,7 @@ static int pg_update_addr_balance(const char * addr,long long value, bool inc)
 
     paramvalues[i++] = data_to_buf(TYPE_ADDR, (void *)(addr), NULL, 20);
     paramvalues[i++] = data_to_buf(TYPE_BIGINT, (void *)(&value), NULL, 0);
-    paramvalues[i++] = data_to_buf(TYPE_INT, (void *)(&inc), NULL, 0);
+    paramvalues[i++] = data_to_buf(TYPE_BOOL, (void *)(&inc), NULL, 0);
                                                 
     res = PQexecParams((PGconn*)dbSrv.db_conn, DEFAULT_UPDATE_ADDR_BALANCE, i, NULL, paramvalues, NULL, NULL, PQ_WRITE);
 
@@ -1123,7 +1123,8 @@ static void pg_commit(void)
 
 static void pg_close(void)
 {
-    PQfinish((PGconn*)dbSrv.db_conn);
+    if (dbSrv.db_conn != NULL)
+        PQfinish((PGconn*)dbSrv.db_conn);
 }
 
 static bool pg_open(void)
