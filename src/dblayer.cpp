@@ -95,7 +95,7 @@ int dbSaveTx(const CTransaction &tx)
 
     int tx_id = dbSrv.db_ops->query_tx(hash.begin());
     if (tx_id ==-1) {
-        tx_id = dbSrv.db_ops->save_tx(hash.begin(), version, lock_time, coinbase, tx_size, nhash.begin());
+        tx_id = dbSrv.db_ops->save_tx(hash.begin(), version, lock_time, coinbase, tx_size, nhash.begin(), tx.nTimeReceived, tx.relayIp.c_str());
         if (tx_id == -1){
             LogPrint("dblayer", "save_tx error tx hash %s \n", hash.ToString());
             return -1;

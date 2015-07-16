@@ -41,7 +41,7 @@ struct SERVER_DB_OPS {
     int    (*add_blk_statics)(int blkid);
     int    (*add_tx_statics)(int txid, int in_count, int out_count, long long in_value, long long out_value);
     int    (*save_blk_tx)(int blk_id, int tx_id, int idx);
-    int    (*save_tx)(unsigned char * hash, int version, int lock_time, bool coinbase, int tx_size, unsigned char * nhash);
+    int    (*save_tx)(unsigned char * hash, int version, int lock_time, bool coinbase, int tx_size, unsigned char * nhash, long long recv_time, const char * ip);
     int    (*save_utx)(int txid);
     int    (*save_txin)(int tx_id, int tx_idx, int prev_out_index, int sequence, const unsigned char *script_sig, int script_len, const unsigned char *prev_out, int p2sh_type);
     int    (*save_txout) (int tx_id, int idx, const unsigned char * scriptPubKey, int script_len, long long nValue, int txout_type);

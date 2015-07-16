@@ -82,8 +82,8 @@ typedef struct timeval tv_t;
     values($1,$2,$3)"
 
 #define DEFAULT_SAVE_TX\
-    "insert into tx (hash, version, lock_time, coinbase, tx_size, nhash) \
-    values($1::bytea,$2,$3,$4::boolean,$5,$6::bytea)  RETURNING id"
+    "insert into tx (hash, version, lock_time, coinbase, tx_size, nhash,recv_time, ip) \
+    values($1::bytea,$2,$3,$4::boolean,$5,$6::bytea,$7,$8)  RETURNING id"
 
 #define DEFAULT_SAVE_UTX\
     "INSERT INTO utx (id) values ($1);" 
@@ -126,6 +126,9 @@ typedef struct timeval tv_t;
 //      update blk set chain=1 where id=blkid; \
 
 //raise notice '%',blkid;
+
+#define DEFAULT_SET_BLK_TO_ORPHAN\
+    "select set_blk_to_orphan($1::bytea);"
 
 #define DEFAULT_DELETE_ALL_UTX \
     "select delete_all_utx();"
@@ -776,14 +779,14 @@ int pg_save_blk_tx(int blk_id, int tx_id, int idx)
     return 0;
 }
 
-int pg_save_tx(unsigned char * hash, int version, int lock_time, bool coinbase, int tx_size, unsigned char * nhash)
+int pg_save_tx(unsigned char * hash, int version, int lock_time, bool coinbase, int tx_size, unsigned char * nhash, long long recv_time, const char * ip)
 {
      PGresult *res;
     ExecStatusType rescode;
     int i = 0;
     int n =0;
     int id=0;
-    const char *paramvalues[6];
+    const char *paramvalues[8];
 
     /* PG does a fine job with timestamps so we won't bother. */
 
@@ -793,6 +796,8 @@ int pg_save_tx(unsigned char * hash, int version, int lock_time, bool coinbase, 
     paramvalues[i++] = data_to_buf(TYPE_BOOL, (void *)(&coinbase), NULL, 0);
     paramvalues[i++] = data_to_buf(TYPE_INT, (void *)(&tx_size), NULL, 0);
     paramvalues[i++] = data_to_buf(TYPE_BYTEA, (void *)(nhash), NULL, 0);
+    paramvalues[i++] = data_to_buf(TYPE_BIGINT, (void *)(recv_time), NULL, 0);
+    paramvalues[i++] = data_to_buf(TYPE_BYTEA, (void *)(ip), NULL, 0);
 
     res = PQexecParams((PGconn*)dbSrv.db_conn, DEFAULT_SAVE_TX, i, NULL, paramvalues, NULL, NULL, PQ_WRITE);
 

@@ -3987,6 +3987,8 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
         vector<uint256> vEraseQueue;
         CTransaction tx;
         vRecv >> tx;
+        tx.nTimeReceived = nTimeReceived;                                                                                
+        tx.relayIp = pfrom->addr.ToString(); 
 
         CInv inv(MSG_TX, tx.GetHash());
         pfrom->AddInventoryKnown(inv);
