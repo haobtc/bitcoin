@@ -109,43 +109,14 @@ int dbSaveTx(const CTransaction &tx)
             int p2sh_type = 0;
 
             if (GetTransaction(txin.prevout.hash, txp, hashBlockp, true))
-	    {
-		    const CTxOut& txoutp =  txp.vout[txin.prevout.n];
-		    CScript script_sig = txoutp.scriptPubKey;
-		    txnouttype txout_type;
-		    vector<CTxDestination> addresses;
-		    int nRequired;
-
-		    in_value += txoutp.nValue;
-
-		    if (!ExtractDestinations(txoutp.scriptPubKey, txout_type, addresses, nRequired)) {
-			    //LogPrint("dblayer", "ExtractDestinations error: \n");
-		    }
-		    else {
-			    BOOST_FOREACH(const CTxDestination& dest, addresses) {
-				    int addr_type = 0;
-				    CKeyID keyId;
-				    CBitcoinAddress addr(dest);
-				    if (!addr.GetKeyID(keyId))
-				    {
-					    //some non stand txout will due to error in here
-					    //LogPrint("dblayer", "addr GetKeyID  error: \n");
-					    continue;
-				    }
-
-                    int addr_id = dbSrv.db_ops->save_addr((const char*)keyId.begin(),addr_type);
-                    if (addr_id == -1){
-                        LogPrint("dblayer", "save_addr 0 error addr: %s \n", addr.ToString());
-                        return -1;
-                    }
-				    if (dbSrv.db_ops->update_addr_balance((const char*)keyId.begin(),txoutp.nValue, false) == -1){
-					    LogPrint("dblayer", "update_addr_balance reduce error addr: %s \n", addr.ToString());
-				    }
-			    }
-
-
-		    }
-	    }
+                {
+                const CTxOut& txoutp =  txp.vout[txin.prevout.n];
+                CScript script_sig = txoutp.scriptPubKey;
+                txnouttype txout_type;
+                vector<CTxDestination> addresses;
+                int nRequired;
+                in_value += txoutp.nValue;
+                }
 
             int txin_id = dbSrv.db_ops->save_txin(tx_id, tx_idx, prev_out_index, txin.nSequence, &txin.scriptSig[0], txin.scriptSig.size(), prev_out.begin(),p2sh_type);
             if (txin_id == -1){
@@ -187,10 +158,6 @@ int dbSaveTx(const CTransaction &tx)
                 if (addr_id == -1){
                     LogPrint("dblayer", "save_addr error addr: %s \n", addr.ToString());
                     return -1;
-                }
-
-                if (dbSrv.db_ops->update_addr_balance((const char*)keyId.begin(),txout.nValue, true) == -1){
-                    LogPrint("dblayer", "update_addr_balance increase error addr: %s \n", addr.ToString());
                 }
 
                 if (dbSrv.db_ops->save_addr_out(addr_id,txout_id) == -1){
@@ -316,10 +283,7 @@ int dbSync()
     CBlockIndex* pblockindex;
 
     //delete all unconfirmed tx
-    dbSrv.db_ops->delete_all_utx();
-
-    dbSyncing = true;
-    return 0;
+    //dbSrv.db_ops->delete_all_utx();
 
     // syndb
     if (maxHeight < chainActive.Height()) {
@@ -337,8 +301,8 @@ int dbSync()
     }
 
     dbSyncing = true;
-
     return 0;
+
     }
 
 bool DbSyncFinish()
