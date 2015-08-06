@@ -45,7 +45,7 @@ struct SERVER_DB_OPS {
     int    (*save_utx)(int txid);
     int    (*save_txin)(int tx_id, int tx_idx, int prev_out_index, int sequence, const unsigned char *script_sig, int script_len, const unsigned char *prev_out, int p2sh_type);
     int    (*save_txout) (int tx_id, int idx, const unsigned char * scriptPubKey, int script_len, long long nValue, int txout_type);
-    int    (*save_addr)(const char * addr, int addr_type);
+    int    (*save_addr)(const char * addr, const char * hash160, int addr_type);
     int    (*save_addr_out)(int addr_id, int txout_id);
     int    (*update_addr_balance)(const char* hash160, long long value, bool inc);
 

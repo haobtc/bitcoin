@@ -87,9 +87,6 @@ typedef struct timeval tv_t;
 
 #define DEFAULT_SAVE_UTX\
     "INSERT INTO utx (id) values ($1);" 
-    //"with inserted as (insert into tx (hash, version, lock_time, coinbase, tx_size, nhash) \
-    //values($1::bytea,$2,$3,$4::boolean,$5,$6::bytea)  RETURNING id) \
-    //INSERT INTO utx (id) SELECT id FROM inserted RETURNING id;"
 
 #define DEFAULT_SAVE_TXIN\
       "insert into txin (tx_id, tx_idx, prev_out_index, sequence, script_sig, prev_out, p2sh_type) \
@@ -100,9 +97,7 @@ typedef struct timeval tv_t;
     values($1,$2,$3::bytea,$4,$5) RETURNING id"
 
 #define DEFAULT_SAVE_ADDR\
-    "select insert_addr($1,$2);"
-//    "insert into addr (hash160, type) \
-//    values($1,$2) RETURNING id"
+    "select insert_addr($1,$2,$3);"
 
 #define DEFAULT_SAVE_ADDR_OUT\
     "insert into addr_txout (addr_id, txout_id) \
@@ -116,44 +111,15 @@ typedef struct timeval tv_t;
 
 #define DEFAULT_UPDATE_BLK\
     "select delete_blk($1::bytea);"
-//    "DO $$ \
-//    DECLARE blkid INTEGER;      \
-//    BEGIN                     \
-//      blkid=(select id from blk where hash=$1::bytea); \
-//      delete from blk_tx where blk_id=blkid; \
-//      delete from blk where id=blkid;    \
-//    END $$;"                  
-//      update blk set chain=1 where id=blkid; \
-
-//raise notice '%',blkid;
 
 #define DEFAULT_SET_BLK_TO_ORPHAN\
     "select set_blk_to_orphan($1::bytea);"
 
 #define DEFAULT_DELETE_ALL_UTX \
     "select delete_all_utx();"
-//    "DO $$                                        \
-//    DECLARE did INT;                              \
-//    BEGIN                                         \
-//      FOR did IN select id from utx LOOP          \
-//      delete from tx where id=did;                \
-//      delete from txin where tx_id=did;           \
-//      delete from addr_txout where txout_id=did;  \
-//      delete from blk_tx where tx_id=did;         \
-//      END LOOP;                                   \
-//    END $$;"
 
 #define DEFAULT_DELETE_TX   \
     "select delete_tx($1);"
-//    "DO $$ \
-//    DECLARE did INT;                              \
-//    BEGIN                     \
-//      did=($1::INTEGER);                              \
-//      delete from addr_txout where txout_id in (select id from txout where tx_id=did); \
-//      delete from txin where tx_id=did; \
-//      delete from txout where tx_id=did; \
-//      delete from tx where id=did; \
-//    END $$;"
 
 #define DEFAULT_UPDATE_ADDR_BALANCE \
     "select update_balance($1, $2, $3);"
@@ -859,8 +825,6 @@ static int pg_query_tx(const unsigned char *  hash)
     res = PQexecParams((PGconn*)dbSrv.db_conn, DEFAULT_SELECT_TX, i, NULL, paramvalues, NULL, NULL, PQ_READ);
     free((char *)paramvalues[0]);
 
-    //res = PQexec((PGconn*)dbSrv.db_conn, "select id from tx where hash='\\x707145792a2806858e73cb7734319dc52a28c7f3437e8d2bbf67c769f857fd41'");
-
     rescode = PQresultStatus(res);
     if (!PGOK(rescode)) {
         LogPrint("dblayer", "pg_query_tx error: %s\n", PQerrorMessage((const PGconn*)dbSrv.db_conn));
@@ -951,18 +915,19 @@ int pg_save_txout (int tx_id, int idx, const unsigned char * scriptPubKey, int s
     return id;
 }
 
-int pg_save_addr(const char * addr, int addr_type)
+int pg_save_addr(const char * addr, const char * hash160, int addr_type)
 {
     PGresult *res;
     ExecStatusType rescode;
     int i=0;
     int n =0;
     int id=0;
-    const char *paramvalues[2];
+    const char *paramvalues[3];
 
     /* PG does a fine job with timestamps so we won't bother. */
 
-    paramvalues[i++] = data_to_buf(TYPE_ADDR, (void *)(addr), NULL, 20);
+    paramvalues[i++] = data_to_buf(TYPE_STR, (void *)(addr), NULL, 0);
+    paramvalues[i++] = data_to_buf(TYPE_ADDR, (void *)(hash160), NULL, 20);
     paramvalues[i++] = data_to_buf(TYPE_INT, (void *)(&addr_type), NULL, 0);
 
     res = PQexecParams((PGconn*)dbSrv.db_conn, DEFAULT_SAVE_ADDR, i, NULL, paramvalues, NULL, NULL, PQ_WRITE);

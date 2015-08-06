@@ -144,17 +144,12 @@ int dbSaveTx(const CTransaction &tx)
             }
 
             BOOST_FOREACH(const CTxDestination& dest, addresses) {
-                int addr_type = 0;
-                CKeyID keyId;
-                CBitcoinAddress addr(dest);
-                if (!addr.GetKeyID(keyId))
-                    {
-                    //some non stand txout will due to error in here
-                    //LogPrint("dblayer", "addr GetKeyID  error: \n");
+                if (boost::get<CNoDestination>(&dest))
                     continue;
-                    }
 
-                int addr_id = dbSrv.db_ops->save_addr((const char*)keyId.begin(),addr_type);
+                CBitcoinAddress addr(dest);
+
+                int addr_id = dbSrv.db_ops->save_addr(addr.ToString().c_str(), (const char*)addr.Get160(), txout_type);
                 if (addr_id == -1){
                     LogPrint("dblayer", "save_addr error addr: %s \n", addr.ToString());
                     return -1;
@@ -284,6 +279,9 @@ int dbSync()
 
     //delete all unconfirmed tx
     //dbSrv.db_ops->delete_all_utx();
+
+    //dbSyncing = true;
+    //return 0;
 
     // syndb
     if (maxHeight < chainActive.Height()) {
