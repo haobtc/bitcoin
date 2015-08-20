@@ -105,15 +105,11 @@ typedef struct timeval tv_t;
 
 #define DEFAULT_ADD_BLK_STATICS "select add_blk_statics($1);"
 
-#define DEFAULT_UPDATE_BLK "select delete_blk($1::bytea);"
-
-#define DEFAULT_SET_BLK_TO_ORPHAN "select set_blk_to_orphan($1::bytea);"
+#define DEFAULT_DELETE_BLK "select delete_blk($1::bytea);"
 
 #define DEFAULT_DELETE_ALL_UTX "select delete_all_utx();"
 
 #define DEFAULT_DELETE_TX "select delete_tx($1);"
-
-#define DEFAULT_UPDATE_ADDR_BALANCE "select update_balance($1, $2, $3);"
 
 const char hextbl[] = "0123456789abcdef";
 
@@ -371,103 +367,6 @@ void txt_to_data(enum data_type typ, char *nam, char *fld, void *data,
   }
 }
 
-void print_meta_data(PGresult *result) {
-  int col;
-
-  LogPrint("dblayer", "Status: %s\n", PQresStatus(PQresultStatus(result)));
-  LogPrint("dblayer", "Returned %d rows ", PQntuples(result));
-  LogPrint("dblayer", "with %d columns\n\n", PQnfields(result));
-
-  LogPrint("dblayer", "Column Type TypeMod Size Name \n");
-
-  LogPrint("dblayer", "------ ---- ------- ---- -----------\n");
-
-  for (col = 0; col < PQnfields(result); col++) {
-    LogPrint("dblayer", "%3d %4d %7d %4d %s\n", col, PQftype(result, col),
-             PQfmod(result, col), PQfsize(result, col), PQfname(result, col));
-  }
-}
-
-#define MAX_PRINT_LEN 40
-static char separator[MAX_PRINT_LEN + 1];
-void print_result_set(PGresult *result) {
-  int col;
-  int row;
-  int *sizes;
-
-  /*
-   ** Compute the size for each column
-   */
-  sizes = (int *)calloc(PQnfields(result), sizeof(int));
-
-  for (col = 0; col < PQnfields(result); col++) {
-    int len = 0;
-
-    for (row = 0; row < PQntuples(result); row++) {
-      if (PQgetisnull(result, row, col))
-        len = 0;
-      else
-        len = PQgetlength(result, row, col);
-
-      if (len > sizes[col])
-        sizes[col] = len;
-    }
-
-    if ((len = strlen(PQfname(result, col))) > sizes[col])
-      sizes[col] = len;
-
-    if (sizes[col] > MAX_PRINT_LEN)
-      sizes[col] = MAX_PRINT_LEN;
-  }
-
-  /*
-   ** Print the field names.
-   */
-  for (col = 0; col < PQnfields(result); col++) {
-    LogPrint("dblayer", "%-*s ", sizes[col], PQfname(result, col));
-  }
-
-  LogPrint("dblayer", "\n");
-
-  /*
-   ** Print the separator line
-   */
-  memset(separator, '-', MAX_PRINT_LEN);
-
-  for (col = 0; col < PQnfields(result); col++) {
-    LogPrint("dblayer", "%*.*s ", sizes[col], sizes[col], separator);
-  }
-
-  LogPrint("dblayer", "\n");
-
-  /*
-   ** Now loop through each of the tuples returned by
-   ** our query and print the results.
-   */
-  for (row = 0; row < PQntuples(result); row++) {
-    for (col = 0; col < PQnfields(result); col++) {
-      if (PQgetisnull(result, row, col))
-        LogPrint("dblayer", "%*s", sizes[col], "");
-      else
-        LogPrint("dblayer", "%*s ", sizes[col], PQgetvalue(result, row, col));
-    }
-
-    LogPrint("dblayer", "\n");
-  }
-  LogPrint("dblayer", "(%d rows)\n\n", PQntuples(result));
-  free(sizes);
-}
-
-void pq_print(PGresult *res) {
-  PQprintOpt options;
-
-  // options.header = 1; /* Ask for column headers */
-  // options.align = 1; /* Pad short columns for alignment */
-  // options.fieldSep = "|"; /* Use a pipe as the field separator */
-  // options.expanded= 1;
-  PQprint(stdout, res, &options);
-}
-
 static bool pg_conncheck(void) {
   if (PQstatus((const PGconn *)(dbSrv.db_conn)) != CONNECTION_OK) {
     LogPrint("dblayer", "Connection to PostgreSQL lost: reconnecting.\n");
@@ -529,7 +428,7 @@ static int pg_query_blk(unsigned char *hash) {
   return id;
 }
 
-static int pg_update_blk(const unsigned char *hash) {
+static int pg_delete_blk(const unsigned char *hash) {
   PGresult *res;
   ExecStatusType rescode;
   int i = 0;
@@ -537,11 +436,11 @@ static int pg_update_blk(const unsigned char *hash) {
 
   paramvalues[i++] = data_to_buf(TYPE_HASH, (void *)&hash, NULL, 0);
 
-  res = PQexecParams((PGconn *)dbSrv.db_conn, DEFAULT_UPDATE_BLK, i, NULL,
+  res = PQexecParams((PGconn *)dbSrv.db_conn, DEFAULT_DELETE_BLK, i, NULL,
                      paramvalues, NULL, NULL, PQ_WRITE);
   rescode = PQresultStatus(res);
   if (!PGOK(rescode)) {
-    LogPrint("dblayer", "pg_update_blk error: %s\n",
+    LogPrint("dblayer", "pg_deletek error: %s\n",
              PQerrorMessage((const PGconn *)dbSrv.db_conn));
     free((char *)paramvalues[0]);
     PQclear(res);
@@ -739,7 +638,6 @@ int pg_save_utx(int txid) {
   PGresult *res;
   ExecStatusType rescode;
   int i = 0;
-  int id = 0;
   const char *paramvalues[1];
 
   /* PG does a fine job with timestamps so we won't bother. */
@@ -907,34 +805,6 @@ int pg_save_addr(const char *addr, const char *hash160, int addr_type) {
   return id;
 }
 
-static int pg_update_addr_balance(const char *addr, long long value, bool inc) {
-  PGresult *res;
-  ExecStatusType rescode;
-  int i = 0;
-  int n = 0;
-  const char *paramvalues[3];
-
-  paramvalues[i++] = data_to_buf(TYPE_ADDR, (void *)(addr), NULL, 20);
-  paramvalues[i++] = data_to_buf(TYPE_BIGINT, (void *)(&value), NULL, 0);
-  paramvalues[i++] = data_to_buf(TYPE_BOOL, (void *)(&inc), NULL, 0);
-
-  res = PQexecParams((PGconn *)dbSrv.db_conn, DEFAULT_UPDATE_ADDR_BALANCE, i,
-                     NULL, paramvalues, NULL, NULL, PQ_WRITE);
-
-  for (n = 0; n < i; n++)
-    free((char *)paramvalues[n]);
-
-  rescode = PQresultStatus(res);
-  PQclear(res);
-  if (!PGOK(rescode)) {
-    LogPrint("dblayer", "pg_update_addr_balance error: %s\n",
-             PQerrorMessage((const PGconn *)dbSrv.db_conn));
-    return -1;
-  }
-
-  return 0;
-}
-
 static int pg_delete_tx(int txid) {
   PGresult *res;
   ExecStatusType rescode;
@@ -1082,7 +952,7 @@ static bool pg_open(void) {
 
 struct SERVER_DB_OPS postgresql_db_ops = {
   .save_blk = pg_save_blk,
-  .update_blk = pg_update_blk,
+  .delete_blk = pg_delete_blk,
   .add_blk_statics = pg_add_blk_statics,
   .add_tx_statics = pg_add_tx_statics,
   .save_blk_tx = pg_save_blk_tx,
@@ -1092,7 +962,6 @@ struct SERVER_DB_OPS postgresql_db_ops = {
   .save_txout = pg_save_txout,
   .save_addr = pg_save_addr,
   .save_addr_out = pg_save_addr_out,
-  .update_addr_balance = pg_update_addr_balance,
   .query_tx = pg_query_tx,
   .delete_tx = pg_delete_tx,
   .delete_all_utx = pg_delete_all_utx,

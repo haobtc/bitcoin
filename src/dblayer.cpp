@@ -235,7 +235,6 @@ int dbSaveBlock(const CBlockIndex *blockindex, const CBlock &block) {
 
 int dbAcceptTx(const CTransaction &tx) {
 
-  LogPrint("dblayer", "dbAcceptTx: threadid %d :%s \n", (long int)syscall(224), tx.GetHash().ToString());
   if (dbSrv.db_ops->begin() == -1) {
     dbSrv.db_ops->rollback();
     LogPrint("dblayer", "dbAcceptTx roll back: %s \n", tx.GetHash().ToString());
@@ -255,7 +254,6 @@ int dbRemoveTx(const CTransaction &tx) {
   if (txid == -1)
     LogPrint("dblayer", "dbRemoveTx: tx not in database \n");
 
-  LogPrint("dblayer", "dbRemoveTx: threadid %d :%s \n", (long int)syscall(224), tx.GetHash().ToString());
   if (dbSrv.db_ops->begin() == -1) {
     dbSrv.db_ops->rollback();
     LogPrint("dblayer", "dbRemoveTx roll back: %s \n", tx.GetHash().ToString());
@@ -268,34 +266,6 @@ int dbRemoveTx(const CTransaction &tx) {
   return 0;
 }
 
-void insertTx(const char *txhash) {
-    CTransaction tx;
-    uint256 hashBlock = 0;
-    uint256 hash;
-    hash.SetHex(txhash);
-
-    if (!GetTransaction(hash, tx, hashBlock, true))
-        LogPrint("dblayer", "- insertTx can't find tx hash %s\n", txhash);
-    else {
-        dbAcceptTx(tx);
-        LogPrint("dblayer", "- insertTx Ok, tx hash %s\n", txhash);
-    }
-}
-
-void removeTx(const char *txhash) {
-    CTransaction tx;
-    uint256 hashBlock = 0;
-    uint256 hash;
-    hash.SetHex(txhash);
-
-    if (!GetTransaction(hash, tx, hashBlock, true))
-        LogPrint("dblayer", "- removeTx can't find tx hash %s\n", txhash);
-    else {
-        dbRemoveTx(tx);
-        LogPrint("dblayer", "- removeTx Ok, tx hash %s\n", txhash);
-    }
-}
- 
 int dbSync() {
   int maxHeight = dbSrv.db_ops->query_maxHeight();
   int i = 0;
@@ -334,7 +304,7 @@ int dbDisconnectBlock(const unsigned char *hash) {
   }
 
   // set blk to side chain
-  dbSrv.db_ops->update_blk(hash);
+  dbSrv.db_ops->delete_blk(hash);
 
   dbSrv.db_ops->commit();
   return 0;

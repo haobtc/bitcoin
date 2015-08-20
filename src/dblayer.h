@@ -29,7 +29,7 @@ struct SERVER_DB_OPS {
                   long long time, int bits, int nonce, int blk_size, int chain,
                   unsigned char *work, int txnum);
 
-  int (*update_blk)(const unsigned char *hash);
+  int (*delete_blk)(const unsigned char *hash);
   int (*add_blk_statics)(int blkid);
   int (*add_tx_statics)(int txid, int in_count, int out_count,
                         long long in_value, long long out_value);
@@ -45,7 +45,6 @@ struct SERVER_DB_OPS {
                     int script_len, long long nValue, int txout_type);
   int (*save_addr)(const char *addr, const char *hash160, int addr_type);
   int (*save_addr_out)(int addr_id, int txout_id);
-  int (*update_addr_balance)(const char *hash160, long long value, bool inc);
 
   int (*query_tx)(const unsigned char *hash);
   int (*delete_tx)(int txid);
@@ -80,12 +79,12 @@ struct DBSERVER {
 
 bool dbOpen();
 void dbClose();
-int dbSaveBlock(const CBlockIndex *blockindex, const CBlock &block);
-int dbDisconnectBlock(const unsigned char *hash);
-int dbSaveTx(const CTransaction &tx);
-int dbAcceptTx(const CTransaction &tx);
-int dbRemoveTx(const CTransaction &tx);
-int dbSync();
+int  dbSaveBlock(const CBlockIndex *blockindex, const CBlock &block);
+int  dbDisconnectBlock(const unsigned char *hash);
+int  dbSaveTx(const CTransaction &tx);
+int  dbAcceptTx(const CTransaction &tx);
+int  dbRemoveTx(const CTransaction &tx);
+int  dbSync();
 bool DbSyncFinish();
 
 #ifdef HAVE_SQLITE3
