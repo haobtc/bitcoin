@@ -681,6 +681,7 @@ if test x$use_pkgconfig = xyes; then
     [
       PKG_CHECK_MODULES([SSL], [libssl],, [AC_MSG_ERROR(openssl  not found.)])
       PKG_CHECK_MODULES([CRYPTO], [libcrypto],,[AC_MSG_ERROR(libcrypto  not found.)])
+      PKG_CHECK_MODULES([PQ], [libpq],,[AC_MSG_ERROR(libpq  not found.)])
       BITCOIN_QT_CHECK([PKG_CHECK_MODULES([PROTOBUF], [protobuf], [have_protobuf=yes], [BITCOIN_QT_FAIL(libprotobuf not found)])])
       if test x$use_qr != xno; then
         BITCOIN_QT_CHECK([PKG_CHECK_MODULES([QR], [libqrencode], [have_qrencode=yes], [have_qrencode=no])])
@@ -695,7 +696,7 @@ else
   AC_CHECK_LIB([ssl],         [main],SSL_LIBS=-lssl, AC_MSG_ERROR(libssl missing))
 
   AC_CHECK_HEADER([postgresql/libpq-fe.h],, AC_MSG_ERROR(libpq headers missing),)
-  AC_CHECK_LIB([pq],          [PQexec],PQ_LIBS=-lpq, AC_MSG_ERROR(libpq missing))
+  AC_CHECK_LIB([pq],          [main],PQ_LIBS=-lpq, AC_MSG_ERROR(libpq missing))
 
   BITCOIN_QT_CHECK(AC_CHECK_LIB([protobuf] ,[main],[PROTOBUF_LIBS=-lprotobuf], BITCOIN_QT_FAIL(libprotobuf not found)))
   if test x$use_qr != xno; then
