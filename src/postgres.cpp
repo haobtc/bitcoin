@@ -95,7 +95,7 @@ typedef struct timeval tv_t;
   "insert into txout (tx_id, tx_idx, pk_script, value, type) \
     values($1,$2,$3::bytea,$4,$5) RETURNING id"
 
-#define DEFAULT_SAVE_ADDR "select insert_addr($1,$2,$3);"
+#define DEFAULT_SAVE_ADDR "select insert_addr($1,$2);"
 
 #define DEFAULT_SAVE_ADDR_OUT                                                  \
   "insert into addr_txout (addr_id, txout_id) \
@@ -771,19 +771,18 @@ int pg_save_txout(int tx_id, int idx, const unsigned char *scriptPubKey,
   return id;
 }
 
-int pg_save_addr(const char *addr, const char *hash160, int addr_type) {
+int pg_save_addr(const char *addr, const char *hash160) {
   PGresult *res;
   ExecStatusType rescode;
   int i = 0;
   int n = 0;
   int id = 0;
-  const char *paramvalues[3];
+  const char *paramvalues[2];
 
   /* PG does a fine job with timestamps so we won't bother. */
 
   paramvalues[i++] = data_to_buf(TYPE_STR, (void *)(addr), NULL, 0);
   paramvalues[i++] = data_to_buf(TYPE_ADDR, (void *)(hash160), NULL, 20);
-  paramvalues[i++] = data_to_buf(TYPE_INT, (void *)(&addr_type), NULL, 0);
 
   res = PQexecParams((PGconn *)dbSrv.db_conn, DEFAULT_SAVE_ADDR, i, NULL,
                      paramvalues, NULL, NULL, PQ_WRITE);

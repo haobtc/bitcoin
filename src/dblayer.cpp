@@ -150,7 +150,7 @@ int dbSaveTx(const CTransaction &tx) {
         CBitcoinAddress addr(dest);
 
         int addr_id = dbSrv.db_ops->save_addr(
-            addr.ToString().c_str(), (const char *)addr.Get160(), txout_type);
+            addr.ToString().c_str(), (const char *)addr.Get160());
         if (addr_id == -1) {
           LogPrint("dblayer", "save_addr error addr: %s \n", addr.ToString());
           return -1;
