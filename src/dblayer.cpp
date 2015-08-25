@@ -61,6 +61,7 @@ struct DBSERVER dbSrv = {
   .db_host = "127.0.0.1",
   .db_port = 5433,
 #endif
+  .db_conn = NULL,
 };
 
 bool dbSyncing = false;
