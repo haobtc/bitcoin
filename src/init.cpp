@@ -859,7 +859,9 @@ bool AppInit2(boost::thread_group& threadGroup)
 #endif // ENABLE_WALLET
     // ********************************************************* Step 6: network initialization
 
+    uiInterface.InitMessage(_("dbOpen begin..."));
     dbOpen();
+    uiInterface.InitMessage(_("dbOpen end..."));
 
     RegisterNodeSignals(GetNodeSignals());
 
@@ -1056,7 +1058,10 @@ bool AppInit2(boost::thread_group& threadGroup)
                     strLoadError = _("Corrupted block database detected");
                     break;
                 }
+
+                uiInterface.InitMessage(_("dbSync begin..."));
                 dbSync();
+                uiInterface.InitMessage(_("dbSync end..."));
             } catch(std::exception &e) {
                 if (fDebug) LogPrintf("%s\n", e.what());
                 strLoadError = _("Error opening block database");
