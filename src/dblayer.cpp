@@ -170,7 +170,7 @@ int dbSaveTx(const CTransaction &tx) {
   return tx_id;
 }
 
-int dbSaveBlock(const CBlockIndex *blockindex, const CBlock &block) {
+int dbSaveBlock(const CBlockIndex *blockindex, CBlock &block) {
   uint256 hash = block.GetHash();
   uint256 prev_hash = 0;
 
@@ -216,6 +216,7 @@ int dbSaveBlock(const CBlockIndex *blockindex, const CBlock &block) {
     }
   }
 
+  block.vtx[0].nTimeReceived = time;
   INDEX_FOREACH(idx, const CTransaction & tx, block.vtx) {
     int tx_id = dbSaveTx(tx);
     if (tx_id == -1) {
