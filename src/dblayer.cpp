@@ -70,6 +70,7 @@ bool dbOpen() {
     LogPrint("dblayer", "\n db open fail!\n");
     return false;
   }
+  LogPrint("dblayer", "\n db open success!\n");
   return true;
 }
 
