@@ -74,22 +74,22 @@ typedef struct timeval tv_t;
 #define DEFAULT_SELECT_TX "select id from tx where hash=$1::bytea"
 
 #define DEFAULT_SAVE_BLK                                                       \
-  "insert into blk (hash, height, version, prev_hash, mrkl_root, time, bits, nonce, blk_size, chain, work, tx_count) \
-    values($1::bytea,$2,$3,$4::bytea,$5::bytea,$6::bigint,$7,$8,$9,$10,$11::bytea, $12) RETURNING id"
+  "insert into blk (hash, height, version, prev_hash, mrkl_root, time, bits, nonce, blk_size, work, tx_count) \
+    values($1::bytea,$2,$3,$4::bytea,$5::bytea,$6::bigint,$7,$8,$9,$10::bytea, $11) RETURNING id"
 
 #define DEFAULT_SAVE_BLK_TX                                                    \
   "insert into blk_tx (blk_id, tx_id, idx) \
     values($1,$2,$3)"
 
 #define DEFAULT_SAVE_TX                                                        \
-  "insert into tx (hash, version, lock_time, coinbase, tx_size, nhash,recv_time, ip) \
-    values($1::bytea,$2,$3,$4::boolean,$5,$6::bytea,$7,$8)  RETURNING id"
+  "insert into tx (hash, version, lock_time, coinbase, tx_size, recv_time, ip) \
+    values($1::bytea,$2,$3,$4::boolean,$5,$6,$7)  RETURNING id"
 
 #define DEFAULT_SAVE_UTX "INSERT INTO utx (id) values ($1);"
 
 #define DEFAULT_SAVE_TXIN                                                      \
-  "insert into txin (tx_id, tx_idx, prev_out_index, sequence, script_sig, prev_out, p2sh_type) \
-      values($1,$2,$3,$4,$5::bytea,$6::bytea, $7)  RETURNING id"
+  "insert into txin (tx_id, tx_idx, prev_out_index, sequence, script_sig, prev_out) \
+      values($1,$2,$3,$4,$5::bytea,$6::bytea)  RETURNING id"
 
 #define DEFAULT_SAVE_TXOUT                                                     \
   "insert into txout (tx_id, tx_idx, pk_script, value, type) \
@@ -514,13 +514,13 @@ static int pg_add_blk_statics(int blkid) {
 static int pg_save_blk(unsigned char *hash, int height, int version,
                        unsigned char *prev_hash, unsigned char *mrkl_root,
                        long long time, int bits, int nonce, int blk_size,
-                       int chain, unsigned char *work, int txnum) {
+                       unsigned char *work, int txnum) {
   PGresult *res;
   ExecStatusType rescode;
   int i = 0;
   int n = 0;
   int id = 0;
-  const char *paramvalues[12];
+  const char *paramvalues[11];
 
   // check if block in database
   if (pg_query_blk(hash) > 0) {
@@ -539,7 +539,6 @@ static int pg_save_blk(unsigned char *hash, int height, int version,
   paramvalues[i++] = data_to_buf(TYPE_INT, (void *)(&bits), NULL, 0);
   paramvalues[i++] = data_to_buf(TYPE_INT, (void *)(&nonce), NULL, 0);
   paramvalues[i++] = data_to_buf(TYPE_INT, (void *)(&blk_size), NULL, 0);
-  paramvalues[i++] = data_to_buf(TYPE_INT, (void *)(&chain), NULL, 0);
   paramvalues[i++] = data_to_buf(TYPE_BYTEA, (void *)(work), NULL, 0);
   paramvalues[i++] = data_to_buf(TYPE_INT, (void *)(&txnum), NULL, 0);
 
@@ -594,14 +593,14 @@ int pg_save_blk_tx(int blk_id, int tx_id, int idx) {
 }
 
 int pg_save_tx(unsigned char *hash, int version, int lock_time, bool coinbase,
-               int tx_size, unsigned char *nhash, long long recv_time,
+               int tx_size, long long recv_time,
                const char *ip) {
   PGresult *res;
   ExecStatusType rescode;
   int i = 0;
   int n = 0;
   int id = 0;
-  const char *paramvalues[8];
+  const char *paramvalues[7];
 
   /* PG does a fine job with timestamps so we won't bother. */
 
@@ -610,7 +609,6 @@ int pg_save_tx(unsigned char *hash, int version, int lock_time, bool coinbase,
   paramvalues[i++] = data_to_buf(TYPE_INT, (void *)(&lock_time), NULL, 0);
   paramvalues[i++] = data_to_buf(TYPE_BOOL, (void *)(&coinbase), NULL, 0);
   paramvalues[i++] = data_to_buf(TYPE_INT, (void *)(&tx_size), NULL, 0);
-  paramvalues[i++] = data_to_buf(TYPE_BYTEA, (void *)(nhash), NULL, 0);
   paramvalues[i++] = data_to_buf(TYPE_BIGINT, (void *)(&recv_time), NULL, 0);
   paramvalues[i++] = data_to_buf(TYPE_BYTEA, (void *)(ip), NULL, 0);
 
@@ -694,13 +692,13 @@ static int pg_query_tx(const unsigned char *hash) {
 
 int pg_save_txin(int tx_id, int tx_idx, int prev_out_index, int sequence,
                  const unsigned char *script_sig, int script_len,
-                 const unsigned char *prev_out, int p2sh_type) {
+                 const unsigned char *prev_out) {
   PGresult *res;
   ExecStatusType rescode;
   int i = 0;
   int n = 0;
   int id = 0;
-  const char *paramvalues[7];
+  const char *paramvalues[6];
 
   /* PG does a fine job with timestamps so we won't bother. */
 
@@ -711,7 +709,6 @@ int pg_save_txin(int tx_id, int tx_idx, int prev_out_index, int sequence,
   paramvalues[i++] =
       data_to_buf(TYPE_SCRIPT, (void *)(script_sig), NULL, script_len);
   paramvalues[i++] = data_to_buf(TYPE_BYTEA, (void *)(prev_out), NULL, 0);
-  paramvalues[i++] = data_to_buf(TYPE_INT, (void *)(&p2sh_type), NULL, 0);
 
   res = PQexecParams((PGconn *)dbSrv.db_conn, DEFAULT_SAVE_TXIN, i, NULL,
                      paramvalues, NULL, NULL, PQ_WRITE);

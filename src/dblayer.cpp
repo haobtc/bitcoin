@@ -81,7 +81,6 @@ int dbSaveTx(const CTransaction &tx) {
   const uint32_t lock_time = tx.nLockTime;
   bool coinbase = tx.IsCoinBase();
   unsigned int tx_size = ::GetSerializeSize(tx, SER_NETWORK, PROTOCOL_VERSION);
-  uint256 nhash = 0;
   int in_count = tx.vin.size();
   int out_count = tx.vout.size();
   long long in_value = 0;
@@ -90,7 +89,7 @@ int dbSaveTx(const CTransaction &tx) {
   int tx_id = dbSrv.db_ops->query_tx(hash.begin());
   if (tx_id == -1) {
     tx_id = dbSrv.db_ops->save_tx(hash.begin(), version, lock_time, coinbase,
-                                  tx_size, nhash.begin(), tx.nTimeReceived,
+                                  tx_size, tx.nTimeReceived,
                                   tx.relayIp.c_str());
     if (tx_id == -1) {
       LogPrint("dblayer", "save_tx error tx hash %s \n", hash.ToString());
@@ -102,7 +101,6 @@ int dbSaveTx(const CTransaction &tx) {
       uint256 hashBlockp = 0;
       int prev_out_index = txin.prevout.n;
       uint256 prev_out = txin.prevout.hash;
-      int p2sh_type = 0;
 
       if (GetTransaction(txin.prevout.hash, txp, hashBlockp, true)) {
         const CTxOut &txoutp = txp.vout[txin.prevout.n];
@@ -113,7 +111,7 @@ int dbSaveTx(const CTransaction &tx) {
 
       int txin_id = dbSrv.db_ops->save_txin(
           tx_id, tx_idx, prev_out_index, txin.nSequence, &txin.scriptSig[0],
-          txin.scriptSig.size(), prev_out.begin(), p2sh_type);
+          txin.scriptSig.size(), prev_out.begin());
       if (txin_id == -1) {
         LogPrint("dblayer", "save_txin error txid %d txin index %d \n", tx_id,
                  tx_idx);
@@ -197,7 +195,7 @@ int dbSaveBlock(const CBlockIndex *blockindex, CBlock &block) {
 
   int blk_id = dbSrv.db_ops->save_blk(
       hash.begin(), height, version, prev_hash.begin(), mrkl_root.begin(), time,
-      bits, nonce, blk_size, 0, work.begin(), block.vtx.size());
+      bits, nonce, blk_size, work.begin(), block.vtx.size());
   if (blk_id == -1) {
     dbSrv.db_ops->rollback();
 
@@ -208,7 +206,7 @@ int dbSaveBlock(const CBlockIndex *blockindex, CBlock &block) {
     }
     blk_id = dbSrv.db_ops->save_blk(
         hash.begin(), height, version, prev_hash.begin(), mrkl_root.begin(),
-        time, bits, nonce, blk_size, 0, work.begin(), block.vtx.size());
+        time, bits, nonce, blk_size, work.begin(), block.vtx.size());
     if (blk_id == -1) {
       LogPrint("dblayer", "block save fail height: %d \n", height);
       dbSrv.db_ops->rollback();
