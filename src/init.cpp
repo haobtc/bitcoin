@@ -859,7 +859,8 @@ bool AppInit2(boost::thread_group& threadGroup)
 #endif // ENABLE_WALLET
     // ********************************************************* Step 6: network initialization
 
-    dbOpen();
+    if (!dbOpen())
+        return InitError(_("Error connect database fail!"));
 
     RegisterNodeSignals(GetNodeSignals());
 
