@@ -183,7 +183,7 @@ int dbSaveBlock(const CBlockIndex *blockindex, CBlock &block) {
   int version = block.nVersion;
   uint256 mrkl_root = block.hashMerkleRoot;
   uint64_t time = block.GetBlockTime();
-  int nonce = block.nNonce;
+  unsigned int nonce = block.nNonce;
   int bits = block.nBits;
   uint256 work = blockindex->nChainWork;
 

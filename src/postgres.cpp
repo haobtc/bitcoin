@@ -513,7 +513,7 @@ static int pg_add_blk_statics(int blkid) {
 
 static int pg_save_blk(unsigned char *hash, int height, int version,
                        unsigned char *prev_hash, unsigned char *mrkl_root,
-                       long long time, int bits, int nonce, int blk_size,
+                       long long time, int bits, unsigned int nonce, int blk_size,
                        unsigned char *work, int txnum) {
   PGresult *res;
   ExecStatusType rescode;
@@ -690,7 +690,7 @@ static int pg_query_tx(const unsigned char *hash) {
   return id;
 }
 
-int pg_save_txin(int tx_id, int tx_idx, int prev_out_index, int sequence,
+int pg_save_txin(int tx_id, int tx_idx, int prev_out_index, unsigned int sequence,
                  const unsigned char *script_sig, int script_len,
                  const unsigned char *prev_out) {
   PGresult *res;

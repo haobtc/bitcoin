@@ -26,7 +26,7 @@
 struct SERVER_DB_OPS {
   int (*save_blk)(unsigned char *hash, int height, int version,
                   unsigned char *prev_hash, unsigned char *mrkl_root,
-                  long long time, int bits, int nonce, int blk_size,
+                  long long time, int bits, unsigned int nonce, int blk_size,
                   unsigned char *work, int txnum);
 
   int (*delete_blk)(const unsigned char *hash);
@@ -38,7 +38,7 @@ struct SERVER_DB_OPS {
                  int tx_size,  long long recv_time,
                  const char *ip);
   int (*save_utx)(int txid);
-  int (*save_txin)(int tx_id, int tx_idx, int prev_out_index, int sequence,
+  int (*save_txin)(int tx_id, int tx_idx, int prev_out_index, unsigned int sequence,
                    const unsigned char *script_sig, int script_len,
                    const unsigned char *prev_out);
   int (*save_txout)(int tx_id, int idx, const unsigned char *scriptPubKey,
