@@ -61,6 +61,7 @@ struct DBSERVER dbSrv = {
   .db_host = "127.0.0.1",
   .db_port = 5433,
 #endif
+  .db_conn = NULL,
 };
 
 bool dbSyncing = false;
@@ -70,6 +71,7 @@ bool dbOpen() {
     LogPrint("dblayer", "\n db open fail!\n");
     return false;
   }
+  LogPrint("dblayer", "\n db open success!\n");
   return true;
 }
 
