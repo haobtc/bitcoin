@@ -85,7 +85,6 @@ int  dbSaveTx(const CTransaction &tx);
 int  dbAcceptTx(const CTransaction &tx);
 int  dbRemoveTx(const CTransaction &tx);
 int  dbSync();
-bool DbSyncFinish();
 
 #ifdef HAVE_SQLITE3
 extern struct SERVER_DB_OPS sqlite_db_ops;

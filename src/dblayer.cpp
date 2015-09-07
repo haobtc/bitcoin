@@ -64,8 +64,6 @@ struct DBSERVER dbSrv = {
   .db_conn = NULL,
 };
 
-bool dbSyncing = false;
-
 bool dbOpen() {
   if (!dbSrv.db_ops->open()) {
     LogPrint("dblayer", "\n db open fail!\n");
@@ -291,11 +289,8 @@ int dbSync() {
     }
   }
 
-  dbSyncing = true;
   return 0;
 }
-
-bool DbSyncFinish() { return dbSyncing; }
 
 int dbDisconnectBlock(const unsigned char *hash) {
 

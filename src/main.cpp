@@ -1944,9 +1944,8 @@ bool static DisconnectTip(CValidationState &state) {
     LogPrint("bench", "- Disconnect block: %.2fms\n", (GetTimeMicros() - nStart) * 0.001);
 
     nStart = GetTimeMicros();
-    if (DbSyncFinish())
-       dbDisconnectBlock(block.GetHash().begin());
-    LogPrint("dblayer", "- Disconnect block: %.2fms\n", (GetTimeMicros() - nStart) * 0.001);
+    dbDisconnectBlock(block.GetHash().begin());
+    LogPrint("dblayer", "- Disconnect block: %.2fms, Height %d\n", (GetTimeMicros() - nStart) * 0.001, pindexDelete->nHeight);
 
     // Write the chain state to disk, if necessary.
     if (!FlushStateToDisk(state, FLUSH_STATE_IF_NEEDED))
@@ -2043,12 +2042,10 @@ bool static ConnectTip(CValidationState &state, CBlockIndex *pindexNew, CBlock *
     LogPrint("bench", "- Connect block: %.2fms [%.2fs]\n", (nTime6 - nTime1) * 0.001, nTimeTotal * 0.000001);
 
     int64_t nStart = GetTimeMicros();
-    if (DbSyncFinish()) {
-       if (!pblock) 
-           dbSaveBlock(pindexNew, block);
-       else
-           dbSaveBlock(pindexNew, *pblock);
-    }
+    if (!pblock) 
+        dbSaveBlock(pindexNew, block);
+    else
+        dbSaveBlock(pindexNew, *pblock);
     LogPrint("dblayer", "- Save block to db: %.2fms height %d\n", (GetTimeMicros() - nStart) * 0.001, pindexNew->nHeight);
 
     return true;
