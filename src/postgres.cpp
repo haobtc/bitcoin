@@ -271,10 +271,10 @@ char *data_to_buf(enum data_type typ, void *data, char *buf, size_t siz) {
     snprintf(buf, siz, "%s", (char *)data);
     break;
   case TYPE_BIGINT:
-    snprintf(buf, siz, "%" PRId64, *((uint64_t *)data));
+    snprintf(buf, siz, "%" PRIu64, *((uint64_t *)data));
     break;
   case TYPE_INT:
-    snprintf(buf, siz, "%" PRId32, *((uint32_t *)data));
+    snprintf(buf, siz, "%" PRIu32, *((uint32_t *)data));
     break;
   case TYPE_BYTEA:
     buf = (char *)bintohex((const unsigned char *)data, siz, &to_len, true);
