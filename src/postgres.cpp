@@ -649,7 +649,7 @@ int pg_save_utx(int txid) {
 
   rescode = PQresultStatus(res);
   if (!PGOK(rescode)) {
-    LogPrint("dblayer", "pg_save_tx failed: %s",
+    LogPrint("dblayer", "pg_save_utx failed: %s",
              PQerrorMessage((const PGconn *)dbSrv.db_conn));
     PQclear(res);
     return -1;
