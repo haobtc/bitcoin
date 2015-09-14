@@ -250,8 +250,10 @@ int dbAcceptTx(const CTransaction &tx) {
 int dbRemoveTx(const CTransaction &tx) {
   uint256 hash = tx.GetHash();
   int txid = dbSrv.db_ops->query_tx(hash.begin());
-  if (txid == -1)
-    LogPrint("dblayer", "dbRemoveTx: tx not in database \n");
+  if (txid == -1) {
+    LogPrint("dblayer", "dbRemoveTx: tx: %x  not in database  \n", tx.GetHash().ToString());
+    return 0;
+  }
 
   if (dbSrv.db_ops->begin() == -1) {
     dbSrv.db_ops->rollback();
