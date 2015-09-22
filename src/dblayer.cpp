@@ -254,7 +254,8 @@ int dbRemoveTx(const CTransaction &tx) {
     LogPrint("dblayer", "dbRemoveTx: tx: %x  not in database  \n", tx.GetHash().ToString());
     return 0;
   }
-
+  
+  LogPrint("dblayer", "dbRemoveTx: tx: %x ,txid:%d in db  \n", tx.GetHash().ToString(),txid);
   if (dbSrv.db_ops->begin() == -1) {
     dbSrv.db_ops->rollback();
     LogPrint("dblayer", "dbRemoveTx roll back: %s \n", tx.GetHash().ToString());
@@ -300,7 +301,7 @@ int dbDisconnectBlock(const unsigned char *hash) {
     dbSrv.db_ops->rollback();
     return -1;
   }
-
+   LogPrint("dblayer", "-delete blk: %s\n", hash);
   // set blk to side chain
   dbSrv.db_ops->delete_blk(hash);
 
