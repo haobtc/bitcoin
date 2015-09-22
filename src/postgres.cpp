@@ -614,7 +614,7 @@ int pg_save_tx(unsigned char *hash, int version, int lock_time, bool coinbase,
   paramvalues[i++] = data_to_buf(TYPE_BOOL, (void *)(&coinbase), NULL, 0);
   paramvalues[i++] = data_to_buf(TYPE_INT, (void *)(&tx_size), NULL, 0);
   paramvalues[i++] = data_to_buf(TYPE_BIGINT, (void *)(&recv_time), NULL, 0);
-  paramvalues[i++] = data_to_buf(TYPE_BYTEA, (void *)(ip), NULL, 0);
+  paramvalues[i++] = data_to_buf(TYPE_STR, (void *)(ip), NULL, 0);
 
   res = PQexecParams((PGconn *)dbSrv.db_conn, DEFAULT_SAVE_TX, i, NULL,
                      paramvalues, NULL, NULL, PQ_WRITE);
