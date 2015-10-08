@@ -379,6 +379,8 @@ static bool pg_conncheck(void) {
       LogPrint("dblayer", "Reconnect attempt failed.\n");
       return false;
     }
+    if (dbSync()==-1)
+        return false;
   }
   return true;
 }
@@ -919,7 +921,7 @@ static void pg_commit(void) {
 }
 
 static void pg_close(void) {
-  if (dbSrv.db_conn != NULL)
+  if (pg_conncheck())
     PQfinish((PGconn *)dbSrv.db_conn);
 }
 
