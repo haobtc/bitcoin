@@ -26,7 +26,11 @@
 #include <string.h>
 #include <netinet/in.h>
 #include <syslog.h>
+#ifdef MAC_OSX
+#include <libpq-fe.h>
+#else
 #include <postgresql/libpq-fe.h>
+#endif
 #include "util.h"
 #include <db.h>
 
