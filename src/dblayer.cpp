@@ -275,6 +275,9 @@ int dbSync() {
   CBlock block;
   CBlockIndex *pblockindex;
 
+  if (maxHeight == -1)
+     return -1;
+
   // syndb
   if (maxHeight < chainActive.Height()) {
     if (maxHeight != 0)
@@ -286,7 +289,8 @@ int dbSync() {
         return -1;
       LogPrint("dblayer", "- read block from disk: %.2fms\n",
                (GetTimeMicros() - nStart) * 0.001);
-      dbSaveBlock(pblockindex, block);
+      if (dbSaveBlock(pblockindex, block) == -1)
+        return -1;
       LogPrint("dblayer", "- Save block to db: %.2fms height %d\n",
                (GetTimeMicros() - nStart) * 0.001, pblockindex->nHeight);
     }

@@ -1061,7 +1061,10 @@ bool AppInit2(boost::thread_group& threadGroup)
                 }
 
                 uiInterface.InitMessage(_("dbSync begin..."));
-                dbSync();
+                if (dbSync() == -1) {
+                    strLoadError = _("Error sql database sync...");
+                    break;
+                }
                 uiInterface.InitMessage(_("dbSync end..."));
             } catch(std::exception &e) {
                 if (fDebug) LogPrintf("%s\n", e.what());
