@@ -393,6 +393,12 @@ std::string HelpMessage(HelpMessageMode mode)
     strUsage += "  -rpcsslprivatekeyfile=<file.pem>         " + strprintf(_("Server private key (default: %s)"), "server.pem") + "\n";
     strUsage += "  -rpcsslciphers=<ciphers>                 " + strprintf(_("Acceptable ciphers (default: %s)"), "TLSv1.2+HIGH:TLSv1+HIGH:!SSLv2:!aNULL:!eNULL:!3DES:@STRENGTH") + "\n";
 
+    strUsage += "\n" + _("database options:") + "\n";
+    strUsage += "  -dbname=<database name>\n";
+    strUsage += "  -dbhost=<host>\n";
+    strUsage += "  -dbport=<port>\n";
+    strUsage += "  -dbuser=<username>\n";
+    strUsage += "  -dbpass=<password>\n";
     return strUsage;
 }
 

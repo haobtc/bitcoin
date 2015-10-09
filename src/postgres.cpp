@@ -926,14 +926,15 @@ static void pg_close(void) {
 }
 
 static bool pg_open(void) {
-  char *portstr = NULL;
-  if (dbSrv.db_port > 0)
-    if (asprintf(&portstr, "%d", dbSrv.db_port) < 0)
-      return false;
-  dbSrv.db_conn =
-      (void *)PQsetdbLogin(dbSrv.db_host, portstr, NULL, NULL, dbSrv.db_name,
-                           dbSrv.db_username, dbSrv.db_password);
-  free(portstr);
+  std::string dbname = GetArg("-dbname", "bitcoin");
+  std::string dbuser = GetArg("-dbuser", "postgres");
+  std::string dbpass = GetArg("-dbpass", "postgres");
+  std::string dbhost = GetArg("-dbhost", "127.0.0.1");
+  std::string dbport = GetArg("-dbport", "5432");
+ 
+  dbSrv.db_conn = (void *)PQsetdbLogin(dbhost.c_str(), dbport.c_str(), NULL, NULL, dbname.c_str(),
+                           dbuser.c_str(), dbpass.c_str());
+
   if (PQstatus((const PGconn *)dbSrv.db_conn) != CONNECTION_OK) {
     LogPrint("dblayer", "failed to connect to postgresql: %s",
              PQerrorMessage((const PGconn *)dbSrv.db_conn));

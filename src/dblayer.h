@@ -69,11 +69,6 @@ struct DBSERVER {
   enum SERVER_DB_ENGINE db_eng;
   struct SERVER_DB_OPS *db_ops;
 
-  const char *db_name;
-  const char *db_username;
-  const char *db_password;
-  const char *db_host;
-  int db_port;
   void *db_conn;
 };
 

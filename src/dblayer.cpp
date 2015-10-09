@@ -43,28 +43,18 @@ struct DBSERVER dbSrv = {
 #if defined(HAVE_SQLITE3)
   .db_eng = SDB_SQLITE, 
   .db_ops = &sqlite_db_ops, 
-  .db_name = "bitcoin.db",
 #elif defined(HAVE_MYSQL)
   .db_eng = SDB_MYSQL,
   .db_ops = &mydb_ops,
-  .db_name = "bitcoin",
-  .db_username = "bitcoin",
-  .db_password = "bitcoin",
-  .db_host = "127.0.0.1",
-  .db_port = 3306,
 #elif defined(HAVE_POSTGRESQL)
   .db_eng = SDB_POSTGRESQL,
   .db_ops = &postgresql_db_ops,
-  .db_name = "test",
-  .db_username = "postgres",
-  .db_password = "c1u2u9z@",
-  .db_host = "127.0.0.1",
-  .db_port = 5433,
 #endif
   .db_conn = NULL,
 };
 
 bool dbOpen() {
+
   if (!dbSrv.db_ops->open()) {
     LogPrint("dblayer", "\n db open fail!\n");
     return false;
