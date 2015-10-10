@@ -379,8 +379,9 @@ static bool pg_conncheck(void) {
       LogPrint("dblayer", "Reconnect attempt failed.\n");
       return false;
     }
-    if (dbSync()==-1)
-        return false;
+    // 
+    // if (dbSync()==-1)
+    //     return false;
   }
   return true;
 }
