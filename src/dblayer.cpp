@@ -27,6 +27,7 @@
 #include "pubkey.h"
 #include "sync.h"
 #include "util.h"
+#include "init.h"
 #include "script/standard.h"
 #include "dblayer.h"
 
@@ -279,6 +280,12 @@ int dbSync() {
     if (maxHeight != 0)
       i = maxHeight + 1;
     for (; i < (chainActive.Height() + 1); i++) {
+
+      if (ShutdownRequested()) {
+        LogPrint("dblayer", "Shutdown requested. Exiting.");
+        return -1;
+      }
+
       pblockindex = chainActive[i];
       int64_t nStart = GetTimeMicros();
       if (!ReadBlockFromDisk(block, pblockindex)) {
