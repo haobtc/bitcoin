@@ -546,7 +546,6 @@ void CTxMemPool::removeForBlock(const std::vector<CTransaction>& vtx, unsigned i
     {
         std::list<CTransaction> dummy;
         remove(tx, dummy, false);
-        dbRemoveTx(tx); 
         removeConflicts(tx, conflicts);
         ClearPrioritisation(tx.GetHash());
     }
