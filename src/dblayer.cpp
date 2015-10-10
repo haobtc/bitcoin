@@ -259,9 +259,7 @@ int dbRemoveTx(const CTransaction &tx) {
 }
 
 int dbSync() {
-  int maxHeight = dbSrv.db_ops->query_maxHeight();
   int i = 0;
-
   CBlock block;
   CBlockIndex *pblockindex;
   static bool syncing=false;
@@ -269,9 +267,12 @@ int dbSync() {
   if (syncing) return 0;
 
   syncing=true;
-
-  if (maxHeight == -1)
-     return -1;
+ 
+  int maxHeight = dbSrv.db_ops->query_maxHeight();
+  if (maxHeight == -1) {
+        syncing=false;
+        return -1;
+  }
 
   // syndb
   if (maxHeight < chainActive.Height()) {
@@ -280,12 +281,16 @@ int dbSync() {
     for (; i < (chainActive.Height() + 1); i++) {
       pblockindex = chainActive[i];
       int64_t nStart = GetTimeMicros();
-      if (!ReadBlockFromDisk(block, pblockindex))
+      if (!ReadBlockFromDisk(block, pblockindex)) {
+        syncing=false;
         return -1;
+      }
       LogPrint("dblayer", "- read block from disk: %.2fms\n",
                (GetTimeMicros() - nStart) * 0.001);
-      if (dbSaveBlock(pblockindex, block) == -1)
+      if (dbSaveBlock(pblockindex, block) == -1) {
+        syncing=false;
         return -1;
+      }
       LogPrint("dblayer", "- Save block to db: %.2fms height %d\n",
                (GetTimeMicros() - nStart) * 0.001, pblockindex->nHeight);
     }
