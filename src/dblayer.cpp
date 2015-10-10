@@ -264,6 +264,11 @@ int dbSync() {
 
   CBlock block;
   CBlockIndex *pblockindex;
+  static bool syncing=false;
+
+  if (syncing) return 0;
+
+  syncing=true;
 
   if (maxHeight == -1)
      return -1;
@@ -286,6 +291,7 @@ int dbSync() {
     }
   }
 
+  syncing=false;
   return 0;
 }
 
