@@ -55,6 +55,10 @@ struct DBSERVER dbSrv = {
 };
 
 bool dbOpen() {
+  if (!fTxIndex) {
+    LogPrint("dblayer", "\n txIndex must enable to support sql database!\n");
+    return false;
+  }
 
   if (!dbSrv.db_ops->open()) {
     LogPrint("dblayer", "\n db open fail!\n");
