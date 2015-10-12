@@ -76,6 +76,7 @@ typedef struct timeval tv_t;
 
 #define DEFAULT_SELECT_BLK "select id from blk where hash=$1::bytea"
 #define DEFAULT_SELECT_TX "select id from tx where hash=$1::bytea"
+#define DEFAULT_SELECT_ADDR_OUT "select * from addr_txout where addr_id=$1::bigint and txout_id=$2::bigint"
 
 #define DEFAULT_SAVE_BLK                                                       \
   "insert into blk (hash, height, version, prev_hash, mrkl_root, time, bits, nonce, blk_size, work, tx_count) \
@@ -379,7 +380,7 @@ static bool pg_conncheck(void) {
       LogPrint("dblayer", "Reconnect attempt failed.\n");
       return false;
     }
-     
+    
     if (dbSync()==-1)
         return false;
   }
@@ -850,12 +851,54 @@ static int pg_delete_all_utx() {
   return 0;
 }
 
+static bool pg_query_addr_out(int addr_id, int txout_id) {
+  PGresult *res;
+  ExecStatusType rescode;
+  int i = 0;
+  int n = 0;
+  bool result;
+  const char *paramvalues[2];
+
+  /* PG does a fine job with timestamps so we won't bother. */
+
+  paramvalues[i++] = data_to_buf(TYPE_INT, (void *)(&addr_id), NULL, 0);
+  paramvalues[i++] = data_to_buf(TYPE_INT, (void *)(&txout_id), NULL, 0);
+  
+  res = PQexecParams((PGconn *)dbSrv.db_conn, DEFAULT_SELECT_ADDR_OUT, i, NULL,
+                     paramvalues, NULL, NULL, PQ_READ);
+  for (n = 0; n < i; n++)
+      free((char *)paramvalues[n]);
+
+  rescode = PQresultStatus(res);
+  if (!PGOK(rescode)) {
+    LogPrint("dblayer", "pg_query_addr_out error: %s\n",
+             PQerrorMessage((const PGconn *)dbSrv.db_conn));
+    PQclear(res);
+    return -1;
+  }
+
+  if (PQntuples(res) > 0)
+    result = true;
+  else
+    result = false;
+
+  PQclear(res);
+
+  return result;
+}
+
 int pg_save_addr_out(int addr_id, int txout_id) {
   PGresult *res;
   ExecStatusType rescode;
   int i = 0;
   int n = 0;
   const char *paramvalues[2];
+
+  if (pg_query_addr_out(addr_id, txout_id))
+  {
+    /* code */
+    return 0;
+  }
 
   /* PG does a fine job with timestamps so we won't bother. */
 
