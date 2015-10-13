@@ -103,6 +103,10 @@ int dbSaveTx(const CTransaction &tx) {
         vector<CTxDestination> addresses;
         in_value += txoutp.nValue;
       }
+      else {
+          LogPrint("dblayer", "GetTransaction fail, check if txindex is opening!\n");
+          return -1;
+      }
 
       int txin_id = dbSrv.db_ops->save_txin(
           tx_id, tx_idx, prev_out_index, txin.nSequence, &txin.scriptSig[0],
