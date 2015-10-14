@@ -98,12 +98,10 @@ int dbSaveTx(const CTransaction &tx) {
       uint256 prev_out = txin.prevout.hash;
 
       if (GetTransaction(txin.prevout.hash, txp, hashBlockp, true)) {
-        const CTxOut &txoutp = txp.vout[txin.prevout.n];
-        CScript script_sig = txoutp.scriptPubKey;
-        vector<CTxDestination> addresses;
-        in_value += txoutp.nValue;
+        in_value += txp.vout[txin.prevout.n].nValue;
       }
-      else {
+      else if (tx_idx !=0 ) {
+          LogPrint("dblayer", "Tx hash: %s\n", txin.prevout.hash.ToString());
           LogPrint("dblayer", "GetTransaction fail, check if txindex is opening!\n");
           return -1;
       }
