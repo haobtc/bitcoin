@@ -252,7 +252,6 @@ int dbRemoveTx(const CTransaction &tx) {
     return 0;
   }
   
-  LogPrint("dblayer", "dbRemoveTx: tx: %x ,txid:%d in db  \n", tx.GetHash().ToString(),txid);
   if (dbSrv.db_ops->begin() == -1) {
     dbSrv.db_ops->rollback();
     LogPrint("dblayer", "dbRemoveTx roll back: %s \n", tx.GetHash().ToString());
