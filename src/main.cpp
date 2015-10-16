@@ -1944,7 +1944,7 @@ bool static DisconnectTip(CValidationState &state) {
     LogPrint("bench", "- Disconnect block: %.2fms\n", (GetTimeMicros() - nStart) * 0.001);
 
     nStart = GetTimeMicros();
-    dbDisconnectBlock(block.GetHash().begin());
+    dbDisconnectBlock(block);
     LogPrint("dblayer", "- Disconnect block: %.2fms, Height %d\n", (GetTimeMicros() - nStart) * 0.001, pindexDelete->nHeight);
 
     // Write the chain state to disk, if necessary.

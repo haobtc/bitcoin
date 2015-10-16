@@ -442,7 +442,7 @@ static int pg_delete_blk(const unsigned char *hash) {
   int i = 0;
   const char *paramvalues[1];
 
-  paramvalues[i++] = data_to_buf(TYPE_HASH, (void *)&hash, NULL, 0);
+  paramvalues[i++] = data_to_buf(TYPE_HASH, (void *)hash, NULL, 0);
 
   res = PQexecParams((PGconn *)dbSrv.db_conn, DEFAULT_DELETE_BLK, i, NULL,
                      paramvalues, NULL, NULL, PQ_WRITE);

@@ -313,15 +313,17 @@ int dbSync() {
   return 0;
 }
 
-int dbDisconnectBlock(const unsigned char *hash) {
+int dbDisconnectBlock(CBlock &block) {
 
   if (dbSrv.db_ops->begin() == -1) {
     dbSrv.db_ops->rollback();
     return -1;
   }
-   LogPrint("dblayer", "-delete blk: %s\n", hash);
+
+  LogPrint("dblayer", "-delete blk: %s\n", block.GetHash().ToString());
+
   // set blk to side chain
-  dbSrv.db_ops->delete_blk(hash);
+  dbSrv.db_ops->delete_blk(block.GetHash().begin());
 
   dbSrv.db_ops->commit();
   return 0;

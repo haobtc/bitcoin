@@ -75,7 +75,7 @@ struct DBSERVER {
 bool dbOpen();
 void dbClose();
 int  dbSaveBlock(const CBlockIndex *blockindex, CBlock &block);
-int  dbDisconnectBlock(const unsigned char *hash);
+int dbDisconnectBlock(CBlock &block);
 int  dbSaveTx(const CTransaction &tx);
 int  dbAcceptTx(const CTransaction &tx);
 int  dbRemoveTx(const CTransaction &tx);
