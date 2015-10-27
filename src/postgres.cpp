@@ -926,6 +926,11 @@ int pg_save_addr_out(int addr_id, int txout_id) {
 static void pg_rollback(void) {
   PGresult *res;
   res = PQexec((PGconn *)dbSrv.db_conn, "Rollback");
+  if (!res || PQresultStatus(res) != PGRES_COMMAND_OK) {
+    LogPrint("dblayer", "Rollback command failed: %s",
+             PQerrorMessage((const PGconn *)dbSrv.db_conn));
+  }
+ 
   PQclear(res);
 }
 
@@ -944,7 +949,8 @@ static bool pg_begin(void) {
   /* start a transaction block */
   res = PQexec((PGconn *)dbSrv.db_conn, "BEGIN");
   if (!res || PQresultStatus(res) != PGRES_COMMAND_OK) {
-    fprintf(stderr, "BEGIN command failed\n");
+    LogPrint("dblayer", "Begin command failed: %s",
+             PQerrorMessage((const PGconn *)dbSrv.db_conn));
     PQclear(res);
     return false;
   }
@@ -961,6 +967,11 @@ static bool pg_begin(void) {
 static void pg_commit(void) {
   PGresult *res;
   res = PQexec((PGconn *)dbSrv.db_conn, "Commit");
+  if (!res || PQresultStatus(res) != PGRES_COMMAND_OK) {
+    LogPrint("dblayer", "Commit command failed: %s",
+             PQerrorMessage((const PGconn *)dbSrv.db_conn));
+  }
+ 
   PQclear(res);
 }
 

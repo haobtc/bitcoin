@@ -23,6 +23,7 @@
 
 #define HAVE_POSTGRESQL
 
+
 struct SERVER_DB_OPS {
   int (*save_blk)(unsigned char *hash, int height, int version,
                   unsigned char *prev_hash, unsigned char *mrkl_root,

@@ -183,31 +183,29 @@ int dbSaveBlock(const CBlockIndex *blockindex, CBlock &block) {
   unsigned int nonce = block.nNonce;
   int bits = block.nBits;
   uint256 work = blockindex->nChainWork;
+  int blk_id = -1;
 
   if (dbSrv.db_ops->begin() == -1) {
-    dbSrv.db_ops->rollback();
     LogPrint("dblayer", "block save first roll back height: %d \n", height);
-    return -1;
+    goto rollback;
   }
 
-  int blk_id = dbSrv.db_ops->save_blk(
+  blk_id = dbSrv.db_ops->save_blk(
       hash.begin(), height, version, prev_hash.begin(), mrkl_root.begin(), time,
       bits, nonce, blk_size, work.begin(), block.vtx.size());
   if (blk_id == -1) {
     dbSrv.db_ops->rollback();
 
     if (dbSrv.db_ops->begin() == -1) {
-      dbSrv.db_ops->rollback();
       LogPrint("dblayer", "block save second roll back height: %d \n", height);
-      return -1;
+      goto rollback;
     }
     blk_id = dbSrv.db_ops->save_blk(
         hash.begin(), height, version, prev_hash.begin(), mrkl_root.begin(),
         time, bits, nonce, blk_size, work.begin(), block.vtx.size());
     if (blk_id == -1) {
       LogPrint("dblayer", "block save fail height: %d \n", height);
-      dbSrv.db_ops->rollback();
-      return -1;
+      goto rollback;
     }
   }
 
@@ -215,30 +213,51 @@ int dbSaveBlock(const CBlockIndex *blockindex, CBlock &block) {
   INDEX_FOREACH(idx, const CTransaction & tx, block.vtx) {
     int tx_id = dbSaveTx(tx);
     if (tx_id == -1) {
-      LogPrint("dblayer", "tx save fail block height: %d,  txhash: %s \n",
+        LogPrint("dblayer", "tx save fail block height: %d,  txhash: %s \n",
                height, tx.GetHash().ToString());
-      dbSrv.db_ops->rollback();
-      return -1;
+        goto rollback;
     }
-    dbSrv.db_ops->save_blk_tx(blk_id, tx_id, idx);
+    if (dbSrv.db_ops->save_blk_tx(blk_id, tx_id, idx)==-1) {
+        LogPrint("dblayer", "blk_tx save fail block : %d,  txhash: %s \n",
+               height, tx.GetHash().ToString());
+        goto rollback;
+        }
   }
 
-  dbSrv.db_ops->add_blk_statics(blk_id);
+  if (dbSrv.db_ops->add_blk_statics(blk_id) == -1) {
+      LogPrint("dblayer", "add_blk_statics fail block : %d\n", height);
+        goto rollback;
+        }
+
   dbSrv.db_ops->commit();
 
   return 0;
+
+rollback:
+
+  dbSrv.db_ops->rollback();
+  return -1;
+
 }
 
 int dbAcceptTx(const CTransaction &tx) {
 
   if (dbSrv.db_ops->begin() == -1) {
-    dbSrv.db_ops->rollback();
     LogPrint("dblayer", "dbAcceptTx roll back: %s \n", tx.GetHash().ToString());
+    dbSrv.db_ops->rollback();
     return -1;
   }
 
   int tx_id = dbSaveTx(tx);
-  dbSrv.db_ops->save_utx(tx_id);
+  if (tx_id==-1) {
+    LogPrint("dblayer", "dbAcceptTx roll back: %s \n", tx.GetHash().ToString());
+    dbSrv.db_ops->rollback();
+  }
+ 
+  if (dbSrv.db_ops->save_utx(tx_id) == -1) {
+    LogPrint("dblayer", "dbAcceptTx roll back: %s \n", tx.GetHash().ToString());
+    dbSrv.db_ops->rollback();
+  }
   dbSrv.db_ops->commit();
 
   return 0;
@@ -253,19 +272,18 @@ int dbRemoveTx(const CTransaction &tx) {
   }
   
   if (dbSrv.db_ops->begin() == -1) {
-    dbSrv.db_ops->rollback();
     LogPrint("dblayer", "dbRemoveTx roll back: %s \n", tx.GetHash().ToString());
+    dbSrv.db_ops->rollback();
     return -1;
   }
 
-  dbSrv.db_ops->delete_tx(txid);
+  if (dbSrv.db_ops->delete_tx(txid) == -1) {
+    LogPrint("dblayer", "dbRemoveTx roll back: %s \n", tx.GetHash().ToString());
+    dbSrv.db_ops->rollback();
+    return -1;
+  }
 
   dbSrv.db_ops->commit();
-
-  /* make sure remove success, remove tx again if remove fail */
-  txid = dbSrv.db_ops->query_tx(hash.begin());
-  if (txid != -1) 
-      dbRemoveTx(tx);
 
   return 0;
 }
@@ -328,7 +346,11 @@ int dbDisconnectBlock(CBlock &block) {
   LogPrint("dblayer", "-delete blk: %s\n", block.GetHash().ToString());
 
   // set blk to side chain
-  dbSrv.db_ops->delete_blk(block.GetHash().begin());
+  if (dbSrv.db_ops->delete_blk(block.GetHash().begin()) == -1) {
+    LogPrint("dblayer", "-delete blk fail: %s\n", block.GetHash().ToString());
+    dbSrv.db_ops->rollback();
+    return -1;
+  }
 
   dbSrv.db_ops->commit();
   return 0;
