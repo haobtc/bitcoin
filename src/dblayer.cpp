@@ -261,6 +261,12 @@ int dbRemoveTx(const CTransaction &tx) {
   dbSrv.db_ops->delete_tx(txid);
 
   dbSrv.db_ops->commit();
+
+  /* make sure remove success, remove tx again if remove fail */
+  txid = dbSrv.db_ops->query_tx(hash.begin());
+  if (txid != -1) 
+      dbRemoveTx(tx);
+
   return 0;
 }
 
