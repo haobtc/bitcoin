@@ -216,6 +216,7 @@ libbitcoin_server_a_SOURCES = \
   validationinterface.cpp \
   dblayer.cpp \
   postgres.cpp \
+  pool.cpp \
   $(BITCOIN_CORE_H)
 
 if ENABLE_ZMQ
