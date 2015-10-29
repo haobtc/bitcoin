@@ -30,6 +30,7 @@
 #include "init.h"
 #include "script/standard.h"
 #include "dblayer.h"
+#include "pool.h"
 
 #include <boost/foreach.hpp>
 
@@ -53,6 +54,43 @@ struct DBSERVER dbSrv = {
 #endif
   .db_conn = NULL,
 };
+
+
+int  getPoolId(const CTransaction &tx) {
+
+    int id = -1;
+
+    id = getPoolIdByPrefix(&tx.vin[0].scriptSig[0], tx.vin[0].scriptSig.size());
+    if (id == -1) {
+        // as p2pool
+        if ((tx.vin[0].scriptSig.size() == 4) && (tx.vout.size()>3)) 
+            return POOL_P2POOL;
+
+        if (tx.vout.size()>20) 
+            return POOL_P2POOL;
+
+        for (unsigned int i = 0; i < tx.vout.size(); i++) {
+            const CTxOut &txout = tx.vout[i];
+            txnouttype txout_type;
+            vector<CTxDestination> addresses;
+            int nRequired;
+ 
+            if (!ExtractDestinations(txout.scriptPubKey, txout_type, addresses, nRequired))
+                 return -1;
+
+            BOOST_FOREACH(const CTxDestination & dest, addresses) {
+                if (boost::get<CNoDestination>(&dest))
+                    continue;
+                CBitcoinAddress addr(dest);
+                id = getPoolIdByAddr(addr.ToString().c_str());
+                if (id != -1)
+                   break;
+                }
+            }
+    }
+
+    return id;
+}
 
 bool dbOpen() {
   if (!fTxIndex) {
@@ -184,15 +222,17 @@ int dbSaveBlock(const CBlockIndex *blockindex, CBlock &block) {
   int bits = block.nBits;
   uint256 work = ArithToUint256(blockindex->nChainWork);
   int blk_id = -1;
+  int pool_id = POOL_UNKNOWN;
 
   if (dbSrv.db_ops->begin() == -1) {
     LogPrint("dblayer", "block save first roll back height: %d \n", height);
     goto rollback;
   }
 
+  pool_id = getPoolId(block.vtx[0]);
   blk_id = dbSrv.db_ops->save_blk(
       hash.begin(), height, version, prev_hash.begin(), mrkl_root.begin(), time,
-      bits, nonce, blk_size, work.begin(), block.vtx.size());
+      bits, nonce, blk_size, work.begin(), block.vtx.size(), pool_id);
   if (blk_id == -1) {
     dbSrv.db_ops->rollback();
 
@@ -202,7 +242,7 @@ int dbSaveBlock(const CBlockIndex *blockindex, CBlock &block) {
     }
     blk_id = dbSrv.db_ops->save_blk(
         hash.begin(), height, version, prev_hash.begin(), mrkl_root.begin(),
-        time, bits, nonce, blk_size, work.begin(), block.vtx.size());
+        time, bits, nonce, blk_size, work.begin(), block.vtx.size(), pool_id);
     if (blk_id == -1) {
       LogPrint("dblayer", "block save fail height: %d \n", height);
       goto rollback;
@@ -285,6 +325,80 @@ int dbRemoveTx(uint256 txhash) {
   return 0;
 }
 
+ 
+int testGetPool() {
+  int i = 0;
+  CBlock block;
+  CBlockIndex *pblockindex;
+  int pool_id =-1;
+
+  int maxHeight = dbSrv.db_ops->query_maxHeight();
+  if (maxHeight == -1) {
+        return -1;
+  }
+
+  // syndb
+  for (; i < (chainActive.Height() + 1); i++) {
+
+    if (ShutdownRequested()) {
+      LogPrint("dblayer", "Shutdown requested. Exiting.");
+      return -1;
+    }
+
+    pblockindex = chainActive[i];
+    int64_t nStart = GetTimeMicros();
+    if (!ReadBlockFromDisk(block, pblockindex)) {
+      return -1;
+    }
+    LogPrint("dblayer", "- read block from disk: %.2fms\n",
+             (GetTimeMicros() - nStart) * 0.001);
+
+    pool_id = getPoolId(block.vtx[0]);
+    if (pool_id==-1)
+        LogPrint("dblayer", "- can't get poolId height %d\n", pblockindex->nHeight);
+  }
+
+  return 0;
+}
+
+int testGetPool1() {
+  int i = 0;
+  CBlock block;
+  CBlockIndex *pblockindex;
+  int pool_id =-1;
+
+  pblockindex = chainActive[367876];
+  if (!ReadBlockFromDisk(block, pblockindex)) {
+    return -1;
+  }
+
+  pool_id = getPoolId(block.vtx[0]);
+ 
+
+  int maxHeight = dbSrv.db_ops->query_maxHeight();
+  if (maxHeight == -1) {
+        return -1;
+  }
+
+  // syndb
+  for (i=360419; i >0; i--) {
+
+    if (ShutdownRequested()) {
+      LogPrint("dblayer", "Shutdown requested. Exiting.");
+      return -1;
+    }
+
+    pblockindex = chainActive[i];
+    if (!ReadBlockFromDisk(block, pblockindex)) {
+      return -1;
+    }
+    pool_id = getPoolId(block.vtx[0]);
+    if (pool_id==-1)
+        LogPrint("dblayer", "------ can't get poolId height %d size %d %s\n", pblockindex->nHeight, block.vtx[0].vin[0].scriptSig.size(), &block.vtx[0].vin[0].scriptSig[0]);
+  }
+
+  return 0;
+}
 int dbSync() {
   int i = 0;
   CBlock block;
@@ -294,7 +408,7 @@ int dbSync() {
   if (syncing) return 0;
 
   syncing=true;
- 
+
   int maxHeight = dbSrv.db_ops->query_maxHeight();
   if (maxHeight == -1) {
         syncing=false;
@@ -354,4 +468,3 @@ int dbDisconnectBlock(CBlock &block) {
 }
 
 
- 
