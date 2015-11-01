@@ -1958,7 +1958,6 @@ bool static DisconnectTip(CValidationState &state) {
         CValidationState stateDummy;
         if (tx.IsCoinBase() || !AcceptToMemoryPool(mempool, stateDummy, tx, false, NULL)) {
             mempool.remove(tx, removed, true);
-            dbRemoveTx(tx); 
         }
     }
     mempool.removeCoinbaseSpends(pcoinsTip, pindexDelete->nHeight);

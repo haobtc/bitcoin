@@ -236,7 +236,6 @@ int dbAcceptTx(const CTransaction &tx) {
     LogPrint("dblayer", "dbAcceptTx roll back: %s \n", tx.GetHash().ToString());
     return -1;
   }
-  LogPrint("dblayer", "dbAcceptTx tx: %s \n", tx.GetHash().ToString());
   int tx_id = dbSaveTx(tx);
   dbSrv.db_ops->save_utx(tx_id);
   dbSrv.db_ops->commit();
@@ -244,28 +243,21 @@ int dbAcceptTx(const CTransaction &tx) {
   return 0;
 }
 
-int dbRemoveTx(const CTransaction &tx) {
-  uint256 hash = tx.GetHash();
-  int txid = dbSrv.db_ops->query_tx(hash.begin());
+int dbRemoveTx(uint256 txhash) {
+  int txid = dbSrv.db_ops->query_tx(txhash.begin());
   if (txid == -1) {
-    LogPrint("dblayer", "dbRemoveTx: tx: %s  not in database  \n", tx.GetHash().ToString());
+    LogPrint("dblayer", "dbRemoveTx: tx: %s  not in database  \n", txhash.begin());
     return 0;
   }
-  LogPrint("dblayer", "dbRemoveTx tx: %s \n", tx.GetHash().ToString());
   if (dbSrv.db_ops->begin() == -1) {
     dbSrv.db_ops->rollback();
-    LogPrint("dblayer", "dbRemoveTx roll back: %s \n", tx.GetHash().ToString());
+    LogPrint("dblayer", "dbRemoveTx roll back: %s \n", txhash.begin());
     return -1;
   }
 
   dbSrv.db_ops->delete_tx(txid);
 
   dbSrv.db_ops->commit();
-
-  /* make sure remove success, remove tx again if remove fail */
-  txid = dbSrv.db_ops->query_tx(hash.begin());
-  if (txid != -1) 
-      dbRemoveTx(tx);
 
   return 0;
 }

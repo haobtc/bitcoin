@@ -471,6 +471,7 @@ void CTxMemPool::remove(const CTransaction &origTx, std::list<CTransaction>& rem
                         continue;
                     txToRemove.push_back(it->second.ptx->GetHash());
                 }
+                dbRemoveTx(hash); 
             }
             BOOST_FOREACH(const CTxIn& txin, tx.vin)
                 mapNextTx.erase(txin.prevout);
@@ -505,7 +506,6 @@ void CTxMemPool::removeCoinbaseSpends(const CCoinsViewCache *pcoins, unsigned in
     BOOST_FOREACH(const CTransaction& tx, transactionsToRemove) {
         list<CTransaction> removed;
         remove(tx, removed, true);
-        dbRemoveTx(tx); 
     }
 }
 
@@ -521,7 +521,6 @@ void CTxMemPool::removeConflicts(const CTransaction &tx, std::list<CTransaction>
             if (txConflict != tx)
             {
                 remove(txConflict, removed, true);
-                dbRemoveTx(txConflict); 
             }
         }
     }
