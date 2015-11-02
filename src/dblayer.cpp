@@ -246,12 +246,12 @@ int dbAcceptTx(const CTransaction &tx) {
 int dbRemoveTx(uint256 txhash) {
   int txid = dbSrv.db_ops->query_tx(txhash.begin());
   if (txid == -1) {
-    LogPrint("dblayer", "dbRemoveTx: tx: %s  not in database  \n", txhash.begin());
+    LogPrint("dblayer", "dbRemoveTx: tx: %s  not in database  \n", txhash.ToString());
     return 0;
   }
   if (dbSrv.db_ops->begin() == -1) {
     dbSrv.db_ops->rollback();
-    LogPrint("dblayer", "dbRemoveTx roll back: %s \n", txhash.begin());
+    LogPrint("dblayer", "dbRemoveTx roll back: %s \n", txhash.ToString());
     return -1;
   }
 
