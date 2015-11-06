@@ -79,7 +79,7 @@ int  dbSaveBlock(const CBlockIndex *blockindex, CBlock &block);
 int dbDisconnectBlock(CBlock &block);
 int  dbSaveTx(const CTransaction &tx);
 int  dbAcceptTx(const CTransaction &tx);
-int  dbRemoveTx(const CTransaction &tx);
+int  dbRemoveTx(uint256 txhash);
 int  dbSync();
 
 #ifdef HAVE_SQLITE3
