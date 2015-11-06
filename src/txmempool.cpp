@@ -487,7 +487,7 @@ void CTxMemPool::remove(const CTransaction &origTx, std::list<CTransaction>& rem
         if (fRecursive) {
             BOOST_FOREACH(txiter it, txToRemove) {
                 CalculateDescendants(it, setAllRemoves);
-                dbRemoveTx(hash); 
+                dbRemoveTx(it->GetTx().GetHash()); 
             }
         } else {
             setAllRemoves.swap(txToRemove);
