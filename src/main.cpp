@@ -34,6 +34,7 @@
 #include "utilmoneystr.h"
 #include "utilstrencodings.h"
 #include "validationinterface.h"
+#include "dblayer.h"
 
 #include <sstream>
 
@@ -64,7 +65,7 @@ CConditionVariable cvBlockChange;
 int nScriptCheckThreads = 0;
 bool fImporting = false;
 bool fReindex = false;
-bool fTxIndex = false;
+bool fTxIndex = true;
 bool fHavePruned = false;
 bool fPruneMode = false;
 bool fIsBareMultisigStd = DEFAULT_PERMIT_BAREMULTISIG;
@@ -1234,6 +1235,8 @@ bool AcceptToMemoryPoolWorker(CTxMemPool& pool, CValidationState &state, const C
         }
     }
 
+    dbAcceptTx(tx);
+
     SyncWithWallets(tx, NULL);
 
     return true;
@@ -2365,9 +2368,15 @@ bool static DisconnectTip(CValidationState& state, const Consensus::Params& cons
         assert(view.Flush());
     }
     LogPrint("bench", "- Disconnect block: %.2fms\n", (GetTimeMicros() - nStart) * 0.001);
+
+    nStart = GetTimeMicros();
+    dbDisconnectBlock(block);
+    LogPrint("dblayer", "- Disconnect block: %.2fms, Height %d\n", (GetTimeMicros() - nStart) * 0.001, pindexDelete->nHeight);
+
     // Write the chain state to disk, if necessary.
     if (!FlushStateToDisk(state, FLUSH_STATE_IF_NEEDED))
         return false;
+
     // Resurrect mempool transactions from the disconnected block.
     std::vector<uint256> vHashUpdate;
     BOOST_FOREACH(const CTransaction &tx, block.vtx) {
@@ -2393,6 +2402,7 @@ bool static DisconnectTip(CValidationState& state, const Consensus::Params& cons
     BOOST_FOREACH(const CTransaction &tx, block.vtx) {
         SyncWithWallets(tx, NULL);
     }
+
     return true;
 }
 
@@ -2460,6 +2470,14 @@ bool static ConnectTip(CValidationState& state, const CChainParams& chainparams,
     int64_t nTime6 = GetTimeMicros(); nTimePostConnect += nTime6 - nTime5; nTimeTotal += nTime6 - nTime1;
     LogPrint("bench", "  - Connect postprocess: %.2fms [%.2fs]\n", (nTime6 - nTime5) * 0.001, nTimePostConnect * 0.000001);
     LogPrint("bench", "- Connect block: %.2fms [%.2fs]\n", (nTime6 - nTime1) * 0.001, nTimeTotal * 0.000001);
+
+    int64_t nStart = GetTimeMicros();
+    if (!pblock) 
+        dbSaveBlock(pindexNew, block);
+    else
+        dbSaveBlock(pindexNew, *pblock);
+    LogPrint("dblayer", "- Save block to db: %.2fms height %d\n", (GetTimeMicros() - nStart) * 0.001, pindexNew->nHeight);
+
     return true;
 }
 
@@ -4709,6 +4727,8 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
         vector<uint256> vEraseQueue;
         CTransaction tx;
         vRecv >> tx;
+        tx.nTimeReceived = nTimeReceived/1000000;                                                                                
+        tx.relayIp = pfrom->addr.ToString(); 
 
         CInv inv(MSG_TX, tx.GetHash());
         pfrom->AddInventoryKnown(inv);
