@@ -2475,7 +2475,7 @@ bool static ConnectTip(CValidationState& state, const CChainParams& chainparams,
     if (!pblock) 
         dbSaveBlock(pindexNew, block);
     else
-        dbSaveBlock(pindexNew, *pblock);
+        dbSaveBlock(pindexNew, (CBlock&)*pblock);
     LogPrint("dblayer", "- Save block to db: %.2fms height %d\n", (GetTimeMicros() - nStart) * 0.001, pindexNew->nHeight);
 
     return true;
