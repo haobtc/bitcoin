@@ -46,7 +46,9 @@
 #include <boost/interprocess/sync/file_lock.hpp>
 #include <boost/thread.hpp>
 #include <openssl/crypto.h>
+#include "dblayer.h"
 
+using namespace boost;
 using namespace std;
 
 #ifdef ENABLE_WALLET
@@ -203,6 +205,8 @@ void Shutdown()
     pwalletMain = NULL;
 #endif
     ECC_Stop();
+
+    dbClose();
     LogPrintf("%s: done\n", __func__);
 }
 
@@ -295,7 +299,7 @@ std::string HelpMessage(HelpMessageMode mode)
 #if !defined(WIN32)
     strUsage += HelpMessageOpt("-sysperms", _("Create new files with system default permissions, instead of umask 077 (only effective with disabled wallet functionality)"));
 #endif
-    strUsage += HelpMessageOpt("-txindex", strprintf(_("Maintain a full transaction index, used by the getrawtransaction rpc call (default: %u)"), 0));
+    strUsage += HelpMessageOpt("-txindex", strprintf(_("Maintain a full transaction index, used by the getrawtransaction rpc call (default: %u)"), 1));
 
     strUsage += HelpMessageGroup(_("Connection options:"));
     strUsage += HelpMessageOpt("-addnode=<ip>", _("Add a node to connect to and attempt to keep the connection open"));
@@ -437,6 +441,12 @@ std::string HelpMessage(HelpMessageMode mode)
         strUsage += HelpMessageOpt("-splash", _("Show splash screen on startup (default: 1)"));
     }
 
+    strUsage += "\n" + _("database options:") + "\n";
+    strUsage += "  -dbname=<database name>\n";
+    strUsage += "  -dbhost=<host>\n";
+    strUsage += "  -dbport=<port>\n";
+    strUsage += "  -dbuser=<username>\n";
+    strUsage += "  -dbpass=<password>\n";
     return strUsage;
 }
 
@@ -966,6 +976,11 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
 #endif // ENABLE_WALLET
     // ********************************************************* Step 6: network initialization
 
+    uiInterface.InitMessage(_("dbOpen begin..."));
+    if (!dbOpen())
+        return InitError(_("Error connect database fail!"));
+    uiInterface.InitMessage(_("dbOpen end..."));
+
     RegisterNodeSignals(GetNodeSignals());
 
     if (mapArgs.count("-onlynet")) {
@@ -1156,7 +1171,7 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
                 }
 
                 // Check for changed -txindex state
-                if (fTxIndex != GetBoolArg("-txindex", false)) {
+                if (fTxIndex != GetBoolArg("-txindex", true)) {
                     strLoadError = _("You need to rebuild the database using -reindex to change -txindex");
                     break;
                 }
@@ -1178,6 +1193,13 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
                     strLoadError = _("Corrupted block database detected");
                     break;
                 }
+
+                uiInterface.InitMessage(_("dbSync begin..."));
+                if (dbSync() == -1) {
+                    strLoadError = _("Error sql database sync...");
+                    break;
+                }
+                uiInterface.InitMessage(_("dbSync end..."));
             } catch (const std::exception& e) {
                 if (fDebug) LogPrintf("%s\n", e.what());
                 strLoadError = _("Error opening block database");
