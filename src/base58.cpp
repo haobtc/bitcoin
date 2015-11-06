@@ -248,6 +248,11 @@ bool CBitcoinAddress::IsValid(const CChainParams& params) const
     return fCorrectSize && fKnownVersion;
 }
 
+unsigned char * CBitcoinAddress::Get160() const
+{
+    return (unsigned char *)&vchData[0];
+}
+
 CTxDestination CBitcoinAddress::Get() const
 {
     if (!IsValid())

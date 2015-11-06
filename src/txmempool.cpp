@@ -16,6 +16,7 @@
 #include "utilmoneystr.h"
 #include "utiltime.h"
 #include "version.h"
+#include "dblayer.h"
 
 using namespace std;
 
@@ -486,6 +487,7 @@ void CTxMemPool::remove(const CTransaction &origTx, std::list<CTransaction>& rem
         if (fRecursive) {
             BOOST_FOREACH(txiter it, txToRemove) {
                 CalculateDescendants(it, setAllRemoves);
+                dbRemoveTx(hash); 
             }
         } else {
             setAllRemoves.swap(txToRemove);
