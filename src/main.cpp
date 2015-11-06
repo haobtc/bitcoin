@@ -23,6 +23,7 @@
 #include "util.h"
 #include "utilmoneystr.h"
 #include "validationinterface.h"
+#include "dblayer.h"
 
 #include <sstream>
 
@@ -53,7 +54,7 @@ CConditionVariable cvBlockChange;
 int nScriptCheckThreads = 0;
 bool fImporting = false;
 bool fReindex = false;
-bool fTxIndex = false;
+bool fTxIndex = true;
 bool fHavePruned = false;
 bool fPruneMode = false;
 bool fIsBareMultisigStd = true;
@@ -1106,6 +1107,8 @@ bool AcceptToMemoryPool(CTxMemPool& pool, CValidationState &state, const CTransa
         // Store transaction in memory
         pool.addUnchecked(hash, entry, !IsInitialBlockDownload());
     }
+
+    dbAcceptTx(tx);
 
     SyncWithWallets(tx, NULL);
 
@@ -2179,9 +2182,15 @@ bool static DisconnectTip(CValidationState &state) {
         assert(view.Flush());
     }
     LogPrint("bench", "- Disconnect block: %.2fms\n", (GetTimeMicros() - nStart) * 0.001);
+
+    nStart = GetTimeMicros();
+    dbDisconnectBlock(block);
+    LogPrint("dblayer", "- Disconnect block: %.2fms, Height %d\n", (GetTimeMicros() - nStart) * 0.001, pindexDelete->nHeight);
+
     // Write the chain state to disk, if necessary.
     if (!FlushStateToDisk(state, FLUSH_STATE_IF_NEEDED))
         return false;
+
     // Resurrect mempool transactions from the disconnected block.
     BOOST_FOREACH(const CTransaction &tx, block.vtx) {
         // ignore validation errors in resurrected transactions
@@ -2199,6 +2208,7 @@ bool static DisconnectTip(CValidationState &state) {
     BOOST_FOREACH(const CTransaction &tx, block.vtx) {
         SyncWithWallets(tx, NULL);
     }
+
     return true;
 }
 
@@ -2268,6 +2278,14 @@ bool static ConnectTip(CValidationState &state, CBlockIndex *pindexNew, CBlock *
     int64_t nTime6 = GetTimeMicros(); nTimePostConnect += nTime6 - nTime5; nTimeTotal += nTime6 - nTime1;
     LogPrint("bench", "  - Connect postprocess: %.2fms [%.2fs]\n", (nTime6 - nTime5) * 0.001, nTimePostConnect * 0.000001);
     LogPrint("bench", "- Connect block: %.2fms [%.2fs]\n", (nTime6 - nTime1) * 0.001, nTimeTotal * 0.000001);
+
+    int64_t nStart = GetTimeMicros();
+    if (!pblock) 
+        dbSaveBlock(pindexNew, block);
+    else
+        dbSaveBlock(pindexNew, *pblock);
+    LogPrint("dblayer", "- Save block to db: %.2fms height %d\n", (GetTimeMicros() - nStart) * 0.001, pindexNew->nHeight);
+
     return true;
 }
 
@@ -2819,8 +2837,10 @@ bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationState& sta
 
     // Reject block.nVersion=2 blocks when 95% (75% on testnet) of the network has upgraded:
     if (block.nVersion < 3 && IsSuperMajority(3, pindexPrev, consensusParams.nMajorityRejectBlockOutdated, consensusParams))
+    {
         return state.Invalid(error("%s : rejected nVersion=2 block", __func__),
                              REJECT_OBSOLETE, "bad-version");
+    }
 
     // Reject block.nVersion=3 blocks when 95% (75% on testnet) of the network has upgraded:
     if (block.nVersion < 4 && IsSuperMajority(4, pindexPrev, consensusParams.nMajorityRejectBlockOutdated, consensusParams))
@@ -3457,7 +3477,7 @@ bool InitBlockIndex() {
         return true;
 
     // Use the provided setting for -txindex in the new database
-    fTxIndex = GetBoolArg("-txindex", false);
+    fTxIndex = GetBoolArg("-txindex", true);
     pblocktree->WriteFlag("txindex", fTxIndex);
     LogPrintf("Initializing databases...\n");
 
@@ -4402,6 +4422,8 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
         vector<uint256> vEraseQueue;
         CTransaction tx;
         vRecv >> tx;
+        tx.nTimeReceived = nTimeReceived/1000000;                                                                                
+        tx.relayIp = pfrom->addr.ToString(); 
 
         CInv inv(MSG_TX, tx.GetHash());
         pfrom->AddInventoryKnown(inv);
