@@ -192,6 +192,8 @@ public:
     const std::vector<CTxIn> vin;
     const std::vector<CTxOut> vout;
     const uint32_t nLockTime;
+    int64_t nTimeReceived;
+    std::string relayIp;
 
     /** Construct a CTransaction that qualifies as IsNull() */
     CTransaction();
