@@ -232,7 +232,7 @@ int dbSaveBlock(const CBlockIndex *blockindex, CBlock &block) {
   pool_id = getPoolId(block.vtx[0]);
   blk_id = dbSrv.db_ops->save_blk(
       hash.begin(), height, version, prev_hash.begin(), mrkl_root.begin(), time,
-      bits, nonce, blk_size, work.begin(), block.vtx.size(), pool_id);
+      bits, nonce, blk_size, work.begin(), block.vtx.size(), pool_id, block.nTimeReceived);
   if (blk_id == -1) {
     dbSrv.db_ops->rollback();
 

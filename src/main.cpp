@@ -4959,6 +4959,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
     {
         CBlock block;
         vRecv >> block;
+        block.nTimeReceived = nTimeReceived/1000000;                                                                                
 
         CInv inv(MSG_BLOCK, block.GetHash());
         LogPrint("net", "received block %s peer=%d\n", inv.hash.ToString(), pfrom->id);
