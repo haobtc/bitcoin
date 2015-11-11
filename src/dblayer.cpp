@@ -192,7 +192,7 @@ int dbSaveBlock(const CBlockIndex *blockindex, CBlock &block) {
 
   blk_id = dbSrv.db_ops->save_blk(
       hash.begin(), height, version, prev_hash.begin(), mrkl_root.begin(), time,
-      bits, nonce, blk_size, work.begin(), block.vtx.size());
+      bits, nonce, blk_size, work.begin(), block.vtx.size(), block.nTimeReceived);
   if (blk_id == -1) {
     dbSrv.db_ops->rollback();
 
