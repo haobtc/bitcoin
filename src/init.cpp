@@ -400,6 +400,7 @@ std::string HelpMessage(HelpMessageMode mode)
     strUsage += "  -dbport=<port>\n";
     strUsage += "  -dbuser=<username>\n";
     strUsage += "  -dbpass=<password>\n";
+    strUsage += "  -deleteallutx=<true>\n";
     return strUsage;
 }
 
@@ -1068,6 +1069,15 @@ bool AppInit2(boost::thread_group& threadGroup)
                 }
 
                 uiInterface.InitMessage(_("dbSync begin..."));
+
+                bool deleteallutx = GetArg("-deleteallutx", true);
+                if  (deleteallutx) {
+                    if (dbDeleteAllUtx() == -1) {
+                        strLoadError = _("Error delete all utx from database...");
+                        break;
+                    }
+                }
+ 
                 if (dbSync() == -1) {
                     strLoadError = _("Error sql database sync...");
                     break;
