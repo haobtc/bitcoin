@@ -76,11 +76,12 @@ struct DBSERVER {
 bool dbOpen();
 void dbClose();
 int  dbSaveBlock(const CBlockIndex *blockindex, CBlock &block);
-int dbDisconnectBlock(CBlock &block);
+int  dbDisconnectBlock(CBlock &block);
 int  dbSaveTx(const CTransaction &tx);
 int  dbAcceptTx(const CTransaction &tx);
 int  dbRemoveTx(uint256 txhash);
 int  dbSync();
+int  dbDeleteAllUtx();
 
 #ifdef HAVE_SQLITE3
 extern struct SERVER_DB_OPS sqlite_db_ops;
