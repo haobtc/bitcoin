@@ -242,7 +242,7 @@ int dbSaveBlock(const CBlockIndex *blockindex, CBlock &block) {
     }
     blk_id = dbSrv.db_ops->save_blk(
         hash.begin(), height, version, prev_hash.begin(), mrkl_root.begin(),
-        time, bits, nonce, blk_size, work.begin(), block.vtx.size(), pool_id);
+        time, bits, nonce, blk_size, work.begin(), block.vtx.size(), pool_id, block.nTimeReceived);
     if (blk_id == -1) {
       LogPrint("dblayer", "block save fail height: %d \n", height);
       goto rollback;
@@ -454,8 +454,6 @@ int dbDisconnectBlock(CBlock &block) {
     return -1;
   }
 
-  LogPrint("dblayer", "-delete blk: %s\n", block.GetHash().ToString());
-
   // set blk to side chain
   if (dbSrv.db_ops->delete_blk(block.GetHash().begin()) == -1) {
     LogPrint("dblayer", "-delete blk fail: %s\n", block.GetHash().ToString());
@@ -466,5 +464,15 @@ int dbDisconnectBlock(CBlock &block) {
   dbSrv.db_ops->commit();
   return 0;
 }
+
+
+ 
+int dbDeleteAllUtx() {
+
+  // delete all utx 
+  return dbSrv.db_ops->delete_all_utx();
+
+}
+ 
 
 
