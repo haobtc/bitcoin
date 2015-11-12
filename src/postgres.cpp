@@ -112,7 +112,7 @@ typedef struct timeval tv_t;
 
 #define DEFAULT_DELETE_BLK "select delete_blk($1::bytea);"
 
-#define DEFAULT_DELETE_ALL_UTX "select delete_all_utx();"
+#define DEFAULT_DELETE_SOME_UTX "select delete_some_utx();"
 
 #define DEFAULT_DELETE_TX "select delete_tx($1);"
 
@@ -384,6 +384,91 @@ static bool pg_conncheck(void) {
     if (dbSync()==-1)
         return false;
   }
+  return true;
+}
+ 
+static void pg_rollback(void) {
+  PGresult *res;
+  res = PQexec((PGconn *)dbSrv.db_conn, "Rollback");
+  if (!res || PQresultStatus(res) != PGRES_COMMAND_OK) {
+    LogPrint("dblayer", "Rollback command failed: %s",
+             PQerrorMessage((const PGconn *)dbSrv.db_conn));
+  }
+ 
+  PQclear(res);
+}
+
+static bool pg_begin(void) {
+  PGresult *res;
+
+  /*
+  * check to see that the backend connection was successfully made
+  */
+  if (!pg_conncheck())
+    return false;
+
+  /* debug = fopen("/tmp/trace.out","w"); */
+  /* PQtrace(conn, debug);  */
+
+  /* start a transaction block */
+  res = PQexec((PGconn *)dbSrv.db_conn, "BEGIN");
+  if (!res || PQresultStatus(res) != PGRES_COMMAND_OK) {
+    LogPrint("dblayer", "Begin command failed: %s",
+             PQerrorMessage((const PGconn *)dbSrv.db_conn));
+    PQclear(res);
+    return false;
+  }
+
+  /*
+   * should PQclear PGresult whenever it is no longer needed to avoid
+   * memory leaks
+   */
+  PQclear(res);
+
+  return true;
+}
+
+static void pg_commit(void) {
+  PGresult *res;
+  res = PQexec((PGconn *)dbSrv.db_conn, "Commit");
+  if (!res || PQresultStatus(res) != PGRES_COMMAND_OK) {
+    LogPrint("dblayer", "Commit command failed: %s",
+             PQerrorMessage((const PGconn *)dbSrv.db_conn));
+  }
+ 
+  PQclear(res);
+}
+
+static void pg_close(void) {
+  if (pg_conncheck())
+    PQfinish((PGconn *)dbSrv.db_conn);
+}
+
+static bool pg_open(void) {
+  std::string dbname = GetArg("-dbname", "bitcoin");
+  std::string dbuser = GetArg("-dbuser", "postgres");
+  std::string dbpass = GetArg("-dbpass", "postgres");
+  std::string dbhost = GetArg("-dbhost", "127.0.0.1");
+  std::string dbport = GetArg("-dbport", "5432");
+ 
+  dbSrv.db_conn = (void *)PQsetdbLogin(dbhost.c_str(), dbport.c_str(), NULL, NULL, dbname.c_str(),
+                           dbuser.c_str(), dbpass.c_str());
+
+  if (PQstatus((const PGconn *)dbSrv.db_conn) != CONNECTION_OK) {
+    LogPrint("dblayer", "failed to connect to postgresql: %s",
+             PQerrorMessage((const PGconn *)dbSrv.db_conn));
+    pg_close();
+    return false;
+  }
+
+  if (PQsetClientEncoding((PGconn *)dbSrv.db_conn, "UTF-8")) {
+    LogPrint("dblayer", "failed to connect to postgresql: %s",
+             PQerrorMessage((const PGconn *)dbSrv.db_conn));
+    pg_close();
+    return false;
+  }
+
+  LogPrint("dblayer", "Connect to postgresql\n");
   return true;
 }
 
@@ -839,14 +924,40 @@ static int pg_delete_all_utx() {
   PGresult *res;
   ExecStatusType rescode;
 
-  res = PQexec((PGconn *)dbSrv.db_conn, DEFAULT_DELETE_ALL_UTX);
-  rescode = PQresultStatus(res);
-  if (!PGOK(rescode)) {
-    LogPrint("dblayer", "pg_delete_all_utx error: %s\n",
-             PQerrorMessage((const PGconn *)dbSrv.db_conn));
-    PQclear(res);
-    return -1;
+  while (true) {
+
+      pg_begin();
+      res = PQexec((PGconn *)dbSrv.db_conn, "select * from utx limit 1");
+      rescode = PQresultStatus(res);
+      if (!PGOK(rescode)) {
+          LogPrint("dblayer", "query utx failed: %s",
+                   PQerrorMessage((const PGconn *)dbSrv.db_conn));
+          PQclear(res);
+          pg_rollback();
+          return -1;
+      }
+
+      if (PQntuples(res) > 0) {
+
+          PQclear(res); 
+          res = PQexec((PGconn *)dbSrv.db_conn, DEFAULT_DELETE_SOME_UTX);
+          rescode = PQresultStatus(res);
+          if (!PGOK(rescode)) {
+              LogPrint("dblayer", "pg_delete_all_utx error: %s\n",
+                       PQerrorMessage((const PGconn *)dbSrv.db_conn));
+              PQclear(res);
+              pg_rollback();
+              return -1;
+          }
+
+          pg_commit();
+      }
+      else
+          break;
+
   }
+
+  pg_commit();
   PQclear(res);
 
   return 0;
@@ -924,90 +1035,6 @@ int pg_save_addr_out(int addr_id, int txout_id) {
   return 0;
 }
 
-static void pg_rollback(void) {
-  PGresult *res;
-  res = PQexec((PGconn *)dbSrv.db_conn, "Rollback");
-  if (!res || PQresultStatus(res) != PGRES_COMMAND_OK) {
-    LogPrint("dblayer", "Rollback command failed: %s",
-             PQerrorMessage((const PGconn *)dbSrv.db_conn));
-  }
- 
-  PQclear(res);
-}
-
-static bool pg_begin(void) {
-  PGresult *res;
-
-  /*
-  * check to see that the backend connection was successfully made
-  */
-  if (!pg_conncheck())
-    return false;
-
-  /* debug = fopen("/tmp/trace.out","w"); */
-  /* PQtrace(conn, debug);  */
-
-  /* start a transaction block */
-  res = PQexec((PGconn *)dbSrv.db_conn, "BEGIN");
-  if (!res || PQresultStatus(res) != PGRES_COMMAND_OK) {
-    LogPrint("dblayer", "Begin command failed: %s",
-             PQerrorMessage((const PGconn *)dbSrv.db_conn));
-    PQclear(res);
-    return false;
-  }
-
-  /*
-   * should PQclear PGresult whenever it is no longer needed to avoid
-   * memory leaks
-   */
-  PQclear(res);
-
-  return true;
-}
-
-static void pg_commit(void) {
-  PGresult *res;
-  res = PQexec((PGconn *)dbSrv.db_conn, "Commit");
-  if (!res || PQresultStatus(res) != PGRES_COMMAND_OK) {
-    LogPrint("dblayer", "Commit command failed: %s",
-             PQerrorMessage((const PGconn *)dbSrv.db_conn));
-  }
- 
-  PQclear(res);
-}
-
-static void pg_close(void) {
-  if (pg_conncheck())
-    PQfinish((PGconn *)dbSrv.db_conn);
-}
-
-static bool pg_open(void) {
-  std::string dbname = GetArg("-dbname", "bitcoin");
-  std::string dbuser = GetArg("-dbuser", "postgres");
-  std::string dbpass = GetArg("-dbpass", "postgres");
-  std::string dbhost = GetArg("-dbhost", "127.0.0.1");
-  std::string dbport = GetArg("-dbport", "5432");
- 
-  dbSrv.db_conn = (void *)PQsetdbLogin(dbhost.c_str(), dbport.c_str(), NULL, NULL, dbname.c_str(),
-                           dbuser.c_str(), dbpass.c_str());
-
-  if (PQstatus((const PGconn *)dbSrv.db_conn) != CONNECTION_OK) {
-    LogPrint("dblayer", "failed to connect to postgresql: %s",
-             PQerrorMessage((const PGconn *)dbSrv.db_conn));
-    pg_close();
-    return false;
-  }
-
-  if (PQsetClientEncoding((PGconn *)dbSrv.db_conn, "UTF-8")) {
-    LogPrint("dblayer", "failed to connect to postgresql: %s",
-             PQerrorMessage((const PGconn *)dbSrv.db_conn));
-    pg_close();
-    return false;
-  }
-
-  LogPrint("dblayer", "Connect to postgresql\n");
-  return true;
-}
 
 struct SERVER_DB_OPS postgresql_db_ops = {
   .save_blk = pg_save_blk,
