@@ -79,7 +79,7 @@ typedef struct timeval tv_t;
 #define DEFAULT_SELECT_ADDR_OUT "select * from addr_txout where addr_id=$1::bigint and txout_id=$2::bigint"
 
 #define DEFAULT_SAVE_BLK                                                       \
-  "insert into blk (hash, height, version, prev_hash, mrkl_root, time, bits, nonce, blk_size, work, tx_count, pool_id, recv_time) \
+  "insert into blk (hash, height, version, prev_hash, mrkl_root, time, bits, nonce, blk_size, work, tx_count, recv_time) \
     values($1::bytea,$2,$3,$4::bytea,$5::bytea,$6::bigint,$7,$8,$9,$10::bytea, $11, $12) RETURNING id"
 
 #define DEFAULT_SAVE_BLK_TX                                                    \
