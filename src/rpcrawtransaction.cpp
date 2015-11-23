@@ -30,6 +30,7 @@
 #include <stdint.h>
 
 #include <boost/assign/list_of.hpp>
+#include "utiltime.h"
 
 #include <univalue.h>
 
