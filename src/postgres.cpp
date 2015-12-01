@@ -79,8 +79,8 @@ typedef struct timeval tv_t;
 #define DEFAULT_SELECT_ADDR_OUT "select * from addr_txout where addr_id=$1::bigint and txout_id=$2::bigint"
 
 #define DEFAULT_SAVE_BLK                                                       \
-  "insert into blk (hash, height, version, prev_hash, mrkl_root, time, bits, nonce, blk_size, work, tx_count, recv_time) \
-    values($1::bytea,$2,$3,$4::bytea,$5::bytea,$6::bigint,$7,$8,$9,$10::bytea, $11, $12) RETURNING id"
+  "insert into blk (hash, height, version, prev_hash, mrkl_root, time, bits, nonce, blk_size, work, tx_count, pool_id, recv_time) \
+    values($1::bytea,$2,$3,$4::bytea,$5::bytea,$6::bigint,$7,$8,$9,$10::bytea, $11, $12, $13) RETURNING id"
 
 #define DEFAULT_SAVE_BLK_TX                                                    \
   "insert into blk_tx (blk_id, tx_id, idx) \
@@ -607,13 +607,13 @@ static int pg_add_blk_statics(int blkid) {
 static int pg_save_blk(unsigned char *hash, int height, int version,
                        unsigned char *prev_hash, unsigned char *mrkl_root,
                        long long time, int bits, unsigned int nonce, int blk_size,
-                       unsigned char *work, int txnum, long long recv_time) {
+                       unsigned char *work, int txnum, int pool_id, long long recv_time) {
   PGresult *res;
   ExecStatusType rescode;
   int i = 0;
   int n = 0;
   int id = 0;
-  const char *paramvalues[12];
+  const char *paramvalues[13];
 
   // check if block in database
   if (pg_query_blk(hash) > 0) {
@@ -634,6 +634,7 @@ static int pg_save_blk(unsigned char *hash, int height, int version,
   paramvalues[i++] = data_to_buf(TYPE_INT, (void *)(&blk_size), NULL, 0);
   paramvalues[i++] = data_to_buf(TYPE_BYTEA, (void *)(work), NULL, 0);
   paramvalues[i++] = data_to_buf(TYPE_INT, (void *)(&txnum), NULL, 0);
+  paramvalues[i++] = data_to_buf(TYPE_INT, (void *)(&pool_id), NULL, 0);
   paramvalues[i++] = data_to_buf(TYPE_BIGINT, (void *)(&recv_time), NULL, 0);
 
   res = PQexecParams((PGconn *)dbSrv.db_conn, DEFAULT_SAVE_BLK, i, NULL,
