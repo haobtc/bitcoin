@@ -461,6 +461,8 @@ void CTxMemPool::remove(const CTransaction &origTx, std::list<CTransaction>& rem
         {
             uint256 hash = txToRemove.front();
             txToRemove.pop_front();
+            if (fRecursive)
+                dbRemoveTx(hash); 
             if (!mapTx.count(hash))
                 continue;
             const CTransaction& tx = mapTx[hash].GetTx();
@@ -471,7 +473,6 @@ void CTxMemPool::remove(const CTransaction &origTx, std::list<CTransaction>& rem
                         continue;
                     txToRemove.push_back(it->second.ptx->GetHash());
                 }
-                dbRemoveTx(hash); 
             }
             BOOST_FOREACH(const CTxIn& txin, tx.vin)
                 mapNextTx.erase(txin.prevout);
