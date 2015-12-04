@@ -135,7 +135,7 @@ int dbSaveTx(const CTransaction &tx) {
       int prev_out_index = txin.prevout.n;
       uint256 prev_out = txin.prevout.hash;
 
-      if (GetTransaction(txin.prevout.hash, txp, hashBlockp, true)) {
+      if (GetTransaction(txin.prevout.hash, txp, Params().GetConsensus(), hashBlockp, true)) {
         in_value += txp.vout[txin.prevout.n].nValue;
       }
       else if (tx_idx !=0 ) {
@@ -325,80 +325,7 @@ int dbRemoveTx(uint256 txhash) {
   return 0;
 }
 
- 
-int testGetPool() {
-  int i = 0;
-  CBlock block;
-  CBlockIndex *pblockindex;
-  int pool_id =-1;
 
-  int maxHeight = dbSrv.db_ops->query_maxHeight();
-  if (maxHeight == -1) {
-        return -1;
-  }
-
-  // syndb
-  for (; i < (chainActive.Height() + 1); i++) {
-
-    if (ShutdownRequested()) {
-      LogPrint("dblayer", "Shutdown requested. Exiting.");
-      return -1;
-    }
-
-    pblockindex = chainActive[i];
-    int64_t nStart = GetTimeMicros();
-    if (!ReadBlockFromDisk(block, pblockindex)) {
-      return -1;
-    }
-    LogPrint("dblayer", "- read block from disk: %.2fms\n",
-             (GetTimeMicros() - nStart) * 0.001);
-
-    pool_id = getPoolId(block.vtx[0]);
-    if (pool_id==-1)
-        LogPrint("dblayer", "- can't get poolId height %d\n", pblockindex->nHeight);
-  }
-
-  return 0;
-}
-
-int testGetPool1() {
-  int i = 0;
-  CBlock block;
-  CBlockIndex *pblockindex;
-  int pool_id =-1;
-
-  pblockindex = chainActive[367876];
-  if (!ReadBlockFromDisk(block, pblockindex)) {
-    return -1;
-  }
-
-  pool_id = getPoolId(block.vtx[0]);
- 
-
-  int maxHeight = dbSrv.db_ops->query_maxHeight();
-  if (maxHeight == -1) {
-        return -1;
-  }
-
-  // syndb
-  for (i=360419; i >0; i--) {
-
-    if (ShutdownRequested()) {
-      LogPrint("dblayer", "Shutdown requested. Exiting.");
-      return -1;
-    }
-
-    pblockindex = chainActive[i];
-    if (!ReadBlockFromDisk(block, pblockindex)) {
-      return -1;
-    }
-    pool_id = getPoolId(block.vtx[0]);
-    if (pool_id==-1)
-        LogPrint("dblayer", "------ can't get poolId height %d size %d %s\n", pblockindex->nHeight, block.vtx[0].vin[0].scriptSig.size(), &block.vtx[0].vin[0].scriptSig[0]);
-  }
-
-  return 0;
-}
 int dbSync() {
   int i = 0;
   CBlock block;
@@ -428,7 +355,7 @@ int dbSync() {
 
       pblockindex = chainActive[i];
       int64_t nStart = GetTimeMicros();
-      if (!ReadBlockFromDisk(block, pblockindex)) {
+      if(!ReadBlockFromDisk(block, pblockindex, Params().GetConsensus())) {
         syncing=false;
         return -1;
       }
