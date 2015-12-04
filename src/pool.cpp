@@ -223,7 +223,7 @@ int getPoolIdByPrefix(const unsigned char *coinbase, int coinbaseLen)
         }
     }
 
-    return -1;
+    return 0;
 }
 
 int getPoolIdByAddr(const char *addr)
@@ -235,5 +235,5 @@ int getPoolIdByAddr(const char *addr)
         }
     }
 
-    return -1;
+    return 0;
 }
