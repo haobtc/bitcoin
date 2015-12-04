@@ -58,10 +58,10 @@ struct DBSERVER dbSrv = {
 
 int  getPoolId(const CTransaction &tx) {
 
-    int id = -1;
+    int id = 0;
 
     id = getPoolIdByPrefix(&tx.vin[0].scriptSig[0], tx.vin[0].scriptSig.size());
-    if (id == -1) {
+    if (id == 0) {
         // as p2pool
         if ((tx.vin[0].scriptSig.size() == 4) && (tx.vout.size()>3)) 
             return POOL_P2POOL;
@@ -76,7 +76,7 @@ int  getPoolId(const CTransaction &tx) {
             int nRequired;
  
             if (!ExtractDestinations(txout.scriptPubKey, txout_type, addresses, nRequired))
-                 return -1;
+                 return 0;
 
             BOOST_FOREACH(const CTxDestination & dest, addresses) {
                 if (boost::get<CNoDestination>(&dest))
