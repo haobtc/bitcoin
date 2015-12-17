@@ -83,6 +83,7 @@ enum POOL_TYPE {
     POOL_TRANSACTIONCOINMINING = 106, //"http://sha256.transactioncoinmining.com/"
     POOL_A_XBT = 107, //"http://www.a-xbt.com/"
     POOL_NEXIOUS = 108, //https://nexious.com/
+    POOL_BRAVO =109,    //http://www.bravo-mining.com/
 };
  
  
