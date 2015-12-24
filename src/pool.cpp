@@ -85,6 +85,7 @@ static struct PoolAddr poolAddresses[] = {
     {"1qtKetXKgqa7j1KrB19HbvfRiNUncmakk",  POOL_TRANSACTIONCOINMINING},
     {"1MFsp2txCPwMMBJjNNeKaduGGs8Wi1Ce7X", POOL_A_XBT},
     {"1GBo1f2tzVx5jScV9kJXPUP9RjvYXuNzV7", POOL_NEXIOUS},
+    {"1AePMyovoijxvHuKhTqWvpaAkRCF4QswC6", POOL_TRICKYS},
     {"1KTNEBhQdj81UhDkJaoe3r8VtAsrnmpmnS", POOL_UNKNOWN},
     {"1Ar2gRkt1u6k4PToeeTKm1KGmtR2GRA1wL", POOL_UNKNOWN},
     {"18UBaMPq6FQfXnKT19rXc8bFFFwQz52Bc1", POOL_UNKNOWN},
