@@ -30,6 +30,7 @@
 #include "init.h"
 #include "script/standard.h"
 #include "dblayer.h"
+#include "pool.h"
 
 #include <boost/foreach.hpp>
 
@@ -53,6 +54,43 @@ struct DBSERVER dbSrv = {
 #endif
   .db_conn = NULL,
 };
+
+
+int  getPoolId(const CTransaction &tx) {
+
+    int id = 0;
+
+    id = getPoolIdByPrefix(&tx.vin[0].scriptSig[0], tx.vin[0].scriptSig.size());
+    if (id == 0) {
+        // as p2pool
+        if ((tx.vin[0].scriptSig.size() == 4) && (tx.vout.size()>3)) 
+            return POOL_P2POOL;
+
+        if (tx.vout.size()>20) 
+            return POOL_P2POOL;
+
+        for (unsigned int i = 0; i < tx.vout.size(); i++) {
+            const CTxOut &txout = tx.vout[i];
+            txnouttype txout_type;
+            vector<CTxDestination> addresses;
+            int nRequired;
+ 
+            if (!ExtractDestinations(txout.scriptPubKey, txout_type, addresses, nRequired))
+                 return 0;
+
+            BOOST_FOREACH(const CTxDestination & dest, addresses) {
+                if (boost::get<CNoDestination>(&dest))
+                    continue;
+                CBitcoinAddress addr(dest);
+                id = getPoolIdByAddr(addr.ToString().c_str());
+                if (id != -1)
+                   break;
+                }
+            }
+    }
+
+    return id;
+}
 
 bool dbOpen() {
   if (!fTxIndex) {
@@ -184,15 +222,17 @@ int dbSaveBlock(const CBlockIndex *blockindex, CBlock &block) {
   int bits = block.nBits;
   uint256 work = blockindex->nChainWork;
   int blk_id = -1;
+  int pool_id = POOL_UNKNOWN;
 
   if (dbSrv.db_ops->begin() == -1) {
     LogPrint("dblayer", "block save first roll back height: %d \n", height);
     goto rollback;
   }
 
+  pool_id = getPoolId(block.vtx[0]);
   blk_id = dbSrv.db_ops->save_blk(
       hash.begin(), height, version, prev_hash.begin(), mrkl_root.begin(), time,
-      bits, nonce, blk_size, work.begin(), block.vtx.size(), block.nTimeReceived);
+      bits, nonce, blk_size, work.begin(), block.vtx.size(), pool_id, block.nTimeReceived);
   if (blk_id == -1) {
     dbSrv.db_ops->rollback();
 
@@ -202,7 +242,7 @@ int dbSaveBlock(const CBlockIndex *blockindex, CBlock &block) {
     }
     blk_id = dbSrv.db_ops->save_blk(
         hash.begin(), height, version, prev_hash.begin(), mrkl_root.begin(),
-        time, bits, nonce, blk_size, work.begin(), block.vtx.size(), block.nTimeReceived);
+        time, bits, nonce, blk_size, work.begin(), block.vtx.size(), pool_id, block.nTimeReceived);
     if (blk_id == -1) {
       LogPrint("dblayer", "block save fail height: %d \n", height);
       goto rollback;
@@ -294,7 +334,7 @@ int dbSync() {
   if (syncing) return 0;
 
   syncing=true;
- 
+
   int maxHeight = dbSrv.db_ops->query_maxHeight();
   if (maxHeight == -1) {
         syncing=false;

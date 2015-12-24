@@ -187,6 +187,7 @@ libbitcoin_server_a_SOURCES = \
   txmempool.cpp \
   dblayer.cpp \
   postgres.cpp \
+  pool.cpp \
   $(JSON_H) \
   $(BITCOIN_CORE_H)
 
