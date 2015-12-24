@@ -196,7 +196,7 @@ static struct PoolPrefix poolPrefixes[] = {
     {"HASHPOOL",POOL_HASHPOOL},
     {"/A-XBT/",POOL_A_XBT},
     {"/Nexious/", POOL_NEXIOUS},
-    {"Bravo Mining", POOL_BRAVO-MINING},
+    {"Bravo Mining", POOL_BRAVO},
     {"p2pool", POOL_P2POOL}
 };
 
