@@ -85,6 +85,7 @@ enum POOL_TYPE {
     POOL_NEXIOUS = 108, //https://nexious.com/
     POOL_BRAVO =109,    //http://www.bravo-mining.com/
     POOL_TRICKYS =110,    //http://pool.wemine.uk/
+    POOL_ESITED =111, //http://stratum1.esited.net:8080/
 };
  
  
