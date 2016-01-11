@@ -84,8 +84,9 @@ enum POOL_TYPE {
     POOL_A_XBT = 107, //"http://www.a-xbt.com/"
     POOL_NEXIOUS = 108, //https://nexious.com/
     POOL_BRAVO =109,    //http://www.bravo-mining.com/
-    POOL_TRICKYS =110,    //http://pool.wemine.uk/
-    POOL_HOTPOOL =111, //http://hotpool.co/
+    POOL_TRICKYS =110,  //http://pool.wemine.uk/
+    POOL_HOTPOOL =111,  //http://hotpool.co/
+    POOL_BTCMP = 112,   //https://www.btcmp.com/
 };
  
  
