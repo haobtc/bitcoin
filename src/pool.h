@@ -89,7 +89,16 @@ enum POOL_TYPE {
     POOL_BTCMP = 112,   //https://www.btcmp.com/
 };
  
+enum BIP_TYPE {
+    BIP_DEFAULT=1,
+    BIP_8M=2,
+    BIP_100=3,
+    BIP_101_8M=4,
+    BIP_101_2M=5,
+    BIP_248=6,
+};
  
 int getPoolIdByPrefix(const unsigned char *coinbase, int coinbaseLen);
 int getPoolIdByAddr(const char *addr);
+int getPoolSupportBip(const unsigned char *coinbase, int coinbaseLen, int version);
 

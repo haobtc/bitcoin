@@ -223,16 +223,18 @@ int dbSaveBlock(const CBlockIndex *blockindex, CBlock &block) {
   uint256 work = ArithToUint256(blockindex->nChainWork);
   int blk_id = -1;
   int pool_id = POOL_UNKNOWN;
+  int poolBip = BIP_DEFAULT;
 
   if (dbSrv.db_ops->begin() == -1) {
     LogPrint("dblayer", "block save first roll back height: %d \n", height);
     goto rollback;
   }
 
+  poolBip = getPoolSupportBip(&block.vtx[0].vin[0].scriptSig[0], block.vtx[0].vin[0].scriptSig.size(), version);
   pool_id = getPoolId(block.vtx[0]);
   blk_id = dbSrv.db_ops->save_blk(
       hash.begin(), height, version, prev_hash.begin(), mrkl_root.begin(), time,
-      bits, nonce, blk_size, work.begin(), block.vtx.size(), pool_id, block.nTimeReceived);
+      bits, nonce, blk_size, work.begin(), block.vtx.size(), pool_id, block.nTimeReceived, poolBip);
   if (blk_id == -1) {
     dbSrv.db_ops->rollback();
 
@@ -242,7 +244,7 @@ int dbSaveBlock(const CBlockIndex *blockindex, CBlock &block) {
     }
     blk_id = dbSrv.db_ops->save_blk(
         hash.begin(), height, version, prev_hash.begin(), mrkl_root.begin(),
-        time, bits, nonce, blk_size, work.begin(), block.vtx.size(), pool_id, block.nTimeReceived);
+        time, bits, nonce, blk_size, work.begin(), block.vtx.size(), pool_id, block.nTimeReceived,poolBip);
     if (blk_id == -1) {
       LogPrint("dblayer", "block save fail height: %d \n", height);
       goto rollback;
@@ -324,7 +326,6 @@ int dbRemoveTx(uint256 txhash) {
 
   return 0;
 }
-
 
 int dbSync() {
   int i = 0;
