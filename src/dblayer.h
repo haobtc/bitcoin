@@ -28,7 +28,7 @@ struct SERVER_DB_OPS {
   int (*save_blk)(unsigned char *hash, int height, int version,
                   unsigned char *prev_hash, unsigned char *mrkl_root,
                   long long time, int bits, unsigned int nonce, int blk_size,
-                  unsigned char *work, int txnum, int pool_id, long long recv_time);
+                  unsigned char *work, int txnum, int pool_id, long long recv_time, int pool_bip);
 
   int (*delete_blk)(const unsigned char *hash);
   int (*add_blk_statics)(int blkid);
