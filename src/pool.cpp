@@ -35,6 +35,13 @@ struct PoolPrefix
     POOL_TYPE poolType;
 };
 
+struct bipPrefix
+{
+    const char * prefix;
+    BIP_TYPE bipType;
+};
+ 
+
 //TODO: hide unactive pool after import db
 
 static struct PoolAddr poolAddresses[] = {
@@ -202,6 +209,12 @@ static struct PoolPrefix poolPrefixes[] = {
     {"p2pool", POOL_P2POOL}
 };
 
+static struct bipPrefix bipPrefixes[] = {
+    {"8M", BIP_8M},
+    {"/BIP100/", BIP_100},
+    {"/BIP248/", BIP_248}
+};
+ 
 const unsigned char * strMatch (const char* str, const unsigned char * mem, int memlen)
 {
     int len = strlen(str);
@@ -239,4 +252,19 @@ int getPoolIdByAddr(const char *addr)
     }
 
     return -1;
+}
+
+int getPoolSupportBip(const unsigned char *coinbase, int coinbaseLen, int version)
+{
+    for (size_t i = 0; i < (sizeof(bipPrefixes) / sizeof(bipPrefixes[0])); ++i) {
+        if (strMatch(bipPrefixes[i].prefix, coinbase, coinbaseLen) != 0) {
+            //LogPrint("dblayer", "mined by pool %s\n", poolPrefixes[i].prefix);
+            return  bipPrefixes[i].bipType;
+        }
+    }
+    if (version == 0x20000004)
+        return  BIP_101_8M;
+    if (version == 0x20000008)
+        return  BIP_101_2M;
+    return 0;
 }
