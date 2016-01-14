@@ -41,6 +41,8 @@ static const unsigned int DEFAULT_KEYPOOL_SIZE = 100;
 static const CAmount DEFAULT_TRANSACTION_FEE = 0;
 //! -paytxfee will warn if called with a higher fee than this amount (in satoshis) per KB
 static const CAmount nHighTransactionFeeWarning = 0.01 * COIN;
+//! -fallbackfee default
+static const CAmount DEFAULT_FALLBACK_FEE = 20000;
 //! -mintxfee default
 static const CAmount DEFAULT_TRANSACTION_MINFEE = 1000;
 //! -maxtxfee default
@@ -154,6 +156,10 @@ struct COutputEntry
 /** A transaction with a merkle branch linking it to the block chain. */
 class CMerkleTx : public CTransaction
 {
+private:
+  /** Constant used in hashBlock to indicate tx has been abandoned */
+    static const uint256 ABANDON_HASH;
+
 public:
     uint256 hashBlock;
 
@@ -205,6 +211,9 @@ public:
     bool IsInMainChain() const { const CBlockIndex *pindexRet; return GetDepthInMainChain(pindexRet) > 0; }
     int GetBlocksToMaturity() const;
     bool AcceptToMemoryPool(bool fLimitFree=true, bool fRejectAbsurdFee=true);
+    bool hashUnset() const { return (hashBlock.IsNull() || hashBlock == ABANDON_HASH); }
+    bool isAbandoned() const { return (hashBlock == ABANDON_HASH); }
+    void setAbandoned() { hashBlock = ABANDON_HASH; }
 };
 
 /** 
@@ -565,7 +574,6 @@ private:
     /* Mark a transaction (and its in-wallet descendants) as conflicting with a particular block. */
     void MarkConflicted(const uint256& hashBlock, const uint256& hashTx);
 
-
     void SyncMetaData(std::pair<TxSpends::iterator, TxSpends::iterator>);
 
 public:
@@ -745,6 +753,7 @@ public:
     bool AddAccountingEntry(const CAccountingEntry&, CWalletDB & pwalletdb);
 
     static CFeeRate minTxFee;
+    static CFeeRate fallbackFee;
     /**
      * Estimate the minimum fee considering user set parameters
      * and the required fee
@@ -862,6 +871,9 @@ public:
     bool GetBroadcastTransactions() const { return fBroadcastTransactions; }
     /** Set whether this wallet broadcasts transactions. */
     void SetBroadcastTransactions(bool broadcast) { fBroadcastTransactions = broadcast; }
+
+    /* Mark a transaction (and it in-wallet descendants) as abandoned so its inputs may be respent. */
+    bool AbandonTransaction(const uint256& hashTx);
 };
 
 /** A key allocated from the key pool. */
