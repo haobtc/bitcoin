@@ -291,11 +291,13 @@ int dbAcceptTx(const CTransaction &tx) {
   if (tx_id==-1) {
     LogPrint("dblayer", "dbAcceptTx roll back: %s \n", tx.GetHash().ToString());
     dbSrv.db_ops->rollback();
+    return -1;
   }
  
   if (dbSrv.db_ops->save_utx(tx_id) == -1) {
     LogPrint("dblayer", "dbAcceptTx roll back: %s \n", tx.GetHash().ToString());
     dbSrv.db_ops->rollback();
+    return -1;
   }
   dbSrv.db_ops->commit();
 
