@@ -939,28 +939,26 @@ static int pg_delete_all_utx() {
           return -1;
       }
 
-      if (PQntuples(res) > 0) {
-
-          PQclear(res); 
-          res = PQexec((PGconn *)dbSrv.db_conn, DEFAULT_DELETE_SOME_UTX);
-          rescode = PQresultStatus(res);
-          if (!PGOK(rescode)) {
-              LogPrint("dblayer", "pg_delete_all_utx error: %s\n",
-                       PQerrorMessage((const PGconn *)dbSrv.db_conn));
-              PQclear(res);
-              pg_rollback();
-              return -1;
-          }
-
-          pg_commit();
+      if (PQntuples(res) <= 0)
+      {
+        PQclear(res);
+        pg_commit();
+        return 0;    
       }
-      else
-          break;
+      
+      PQclear(res); 
+      res = PQexec((PGconn *)dbSrv.db_conn, DEFAULT_DELETE_SOME_UTX);
+      rescode = PQresultStatus(res);
+      if (!PGOK(rescode)) {
+          LogPrint("dblayer", "pg_delete_all_utx error: %s\n",
+                   PQerrorMessage((const PGconn *)dbSrv.db_conn));
+          PQclear(res);
+          pg_rollback();
+          return -1;
+      }
 
+      pg_commit();
   }
-
-  pg_commit();
-  PQclear(res);
 
   return 0;
 }
