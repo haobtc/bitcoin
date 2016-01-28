@@ -55,6 +55,18 @@ struct DBSERVER dbSrv = {
   .db_conn = NULL,
 };
 
+const char * Getwitness(const CTxinWitness& witness)
+{
+    string str;
+    string str1;
+    for (unsigned int j = 0; j < witness.scriptWitness.stack.size(); j++) {
+        if (j > 0)
+            str += " ";
+        std::vector<unsigned char> item = witness.scriptWitness.stack[j];
+        str += std::string(item.begin(), item.end());
+    }
+    return str.c_str();
+}
 
 int  getPoolId(const CTransaction &tx) {
 
@@ -118,12 +130,15 @@ int dbSaveTx(const CTransaction &tx) {
   int out_count = tx.vout.size();
   long long in_value = 0;
   long long out_value = 0;
+  uint256 wtxid =   tx.GetWitnessHash();
+  int wsize = (int)::GetSerializeSize(tx, SER_NETWORK, PROTOCOL_VERSION | SERIALIZE_TRANSACTION_WITNESS);
+  int vsize =  (int)::GetVirtualTransactionSize(tx);
 
   int tx_id = dbSrv.db_ops->query_tx(hash.begin());
   if (tx_id == -1) {
     tx_id = dbSrv.db_ops->save_tx(hash.begin(), version, lock_time, coinbase,
                                   tx_size, tx.nTimeReceived,
-                                  tx.relayIp.c_str());
+                                  tx.relayIp.c_str(), wtxid.begin(), wsize, vsize);
     if (tx_id == -1) {
       LogPrint("dblayer", "save_tx error tx hash %s \n", hash.ToString());
       return -1;
@@ -134,6 +149,7 @@ int dbSaveTx(const CTransaction &tx) {
       uint256 hashBlockp;
       int prev_out_index = txin.prevout.n;
       uint256 prev_out = txin.prevout.hash;
+      string txinwitness;
 
       if (GetTransaction(txin.prevout.hash, txp, Params().GetConsensus(), hashBlockp, true)) {
         in_value += txp.vout[txin.prevout.n].nValue;
@@ -144,9 +160,15 @@ int dbSaveTx(const CTransaction &tx) {
           return -1;
       }
 
+      if (!tx.wit.IsNull()) {
+            if (!tx.wit.vtxinwit[tx_idx].IsNull()) {
+                txinwitness = WitnessToStr(tx.wit.vtxinwit[tx_idx]);
+            }
+        }
+ 
       int txin_id = dbSrv.db_ops->save_txin(
           tx_id, tx_idx, prev_out_index, txin.nSequence, &txin.scriptSig[0],
-          txin.scriptSig.size(), prev_out.begin());
+          txin.scriptSig.size(), prev_out.begin(), txinwitness.c_str());
       if (txin_id == -1) {
         LogPrint("dblayer", "save_txin error txid %d txin index %d \n", tx_id,
                  tx_idx);
