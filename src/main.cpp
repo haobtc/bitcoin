@@ -2451,10 +2451,8 @@ bool static ConnectTip(CValidationState& state, const CChainParams& chainparams,
     LogPrint("bench", "- Connect block: %.2fms [%.2fs]\n", (nTime6 - nTime1) * 0.001, nTimeTotal * 0.000001);
 
     int64_t nStart = GetTimeMicros();
-    if (!pblock) 
-        dbSaveBlock(pindexNew, block);
-    else
-        dbSaveBlock(pindexNew, (CBlock&)*pblock);
+    assert (pblock != NULL);
+    dbSaveBlock(pindexNew, (CBlock&)*pblock);
     LogPrint("dblayer", "- Save block to db: %.2fms height %d\n", (GetTimeMicros() - nStart) * 0.001, pindexNew->nHeight);
 
     return true;
