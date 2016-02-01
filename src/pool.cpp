@@ -72,6 +72,7 @@ static struct PoolAddr poolAddresses[] = {
     {"1A66YkobmtQvGbq9jt5faw6nCE8tgjGgKT", POOL_BITFURY},
     {"15rQXUSBQRubShPpiJfDLxmwS8ze2RUm4z", POOL_21_INC},
     {"1CdJi2xRTXJF6CEJqNHYyQDNEcM3X7fUhD", POOL_21_INC},
+    {"1GC6HxDvnchDdb5cGkFXsJMZBFRsKAXfwi", POOL_21_INC},
     {"1MimPd6LrPKGftPRHWdfk8S3KYBfN4ELnD", POOL_DIGITALBTC},
     {"1NY15MK947MLzmPUa2gL7UgyR8prLh2xfu", POOL_DIGITALX_MINTSY},
     {"1P4B6rx1js8TaEDXvZvtrkiEb9XrJgMQ19", POOL_TELCO_214},
