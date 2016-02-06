@@ -31,6 +31,7 @@
 #include "script/standard.h"
 #include "dblayer.h"
 #include "pool.h"
+#include "utilstrencodings.h"
 
 #include <boost/foreach.hpp>
 
@@ -56,6 +57,20 @@ struct DBSERVER dbSrv = {
 };
 
 const char * Getwitness(const CTxinWitness& witness)
+{
+    string str="";
+    for (unsigned int j = 0; j < witness.scriptWitness.stack.size(); j++) {
+        std::vector<unsigned char> item = witness.scriptWitness.stack[j];
+        if (item.size()>0) {
+            if (j > 0)
+                str += " ";
+            str += HexStr(item);
+        }
+    }
+    return str.c_str();
+}
+
+const char * Getwitness1(const CTxinWitness& witness)
 {
     string str;
     string str1;
@@ -149,7 +164,7 @@ int dbSaveTx(const CTransaction &tx) {
       uint256 hashBlockp;
       int prev_out_index = txin.prevout.n;
       uint256 prev_out = txin.prevout.hash;
-      string txinwitness;
+      const char *txinwitness;
 
       if (GetTransaction(txin.prevout.hash, txp, Params().GetConsensus(), hashBlockp, true)) {
         in_value += txp.vout[txin.prevout.n].nValue;
@@ -162,13 +177,13 @@ int dbSaveTx(const CTransaction &tx) {
 
       if (!tx.wit.IsNull()) {
             if (!tx.wit.vtxinwit[tx_idx].IsNull()) {
-                txinwitness = WitnessToStr(tx.wit.vtxinwit[tx_idx]);
+                txinwitness = Getwitness(tx.wit.vtxinwit[tx_idx]);
             }
         }
  
       int txin_id = dbSrv.db_ops->save_txin(
           tx_id, tx_idx, prev_out_index, txin.nSequence, &txin.scriptSig[0],
-          txin.scriptSig.size(), prev_out.begin(), txinwitness.c_str());
+          txin.scriptSig.size(), prev_out.begin(), txinwitness);
       if (txin_id == -1) {
         LogPrint("dblayer", "save_txin error txid %d txin index %d \n", tx_id,
                  tx_idx);
