@@ -957,10 +957,10 @@ static int pg_delete_all_utx() {
           return -1;
       }
 
+      PQclear(res);
       pg_commit();
   }
 
-  return 0;
 }
 
 static bool pg_query_addr_out(int addr_id, int txout_id) {
