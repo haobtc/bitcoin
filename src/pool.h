@@ -88,6 +88,7 @@ enum POOL_TYPE {
     POOL_HOTPOOL =111,  //http://hotpool.co/
     POOL_BTCMP = 112,   //https://www.btcmp.com/
     POOL_BCMONSTER = 113, //http://www.bcmonster.com/
+    POOL_MANHATTANMINE = 114, //http://ham.manhattanmine.com
 };
  
 enum BIP_TYPE {
