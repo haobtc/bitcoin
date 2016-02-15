@@ -207,7 +207,8 @@ static struct PoolPrefix poolPrefixes[] = {
     {"/A-XBT/",POOL_A_XBT},
     {"/Nexious/", POOL_NEXIOUS},
     {"Bravo Mining", POOL_BRAVO},
-    {"p2pool", POOL_P2POOL}
+    {"p2pool", POOL_P2POOL},
+    {"/BCMonster/", POOL_BCMONSTER}
 };
 
 static struct bipPrefix bipPrefixes[] = {
