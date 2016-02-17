@@ -94,7 +94,7 @@ typedef struct timeval tv_t;
 
 #define DEFAULT_SAVE_TXIN                                                      \
   "insert into txin (tx_id, tx_idx, prev_out_index, sequence, script_sig, prev_out, witness) \
-      values($1,$2,$3,$4,$5::bytea,$6::bytea, $7)  RETURNING id"
+      values($1,$2,$3,$4,$5::bytea,$6::bytea, $7::bytea)  RETURNING id"
 
 #define DEFAULT_SAVE_TXOUT                                                     \
   "insert into txout (tx_id, tx_idx, pk_script, value, type) \
@@ -788,7 +788,7 @@ static int pg_query_tx(const unsigned char *hash) {
 
 int pg_save_txin(int tx_id, int tx_idx, int prev_out_index, unsigned int sequence,
                  const unsigned char *script_sig, int script_len,
-                 const unsigned char *prev_out, const char *witness) {
+                 const unsigned char *prev_out, const char *witness, int witness_len) {
   PGresult *res;
   ExecStatusType rescode;
   int i = 0;
@@ -805,7 +805,7 @@ int pg_save_txin(int tx_id, int tx_idx, int prev_out_index, unsigned int sequenc
   paramvalues[i++] =
       data_to_buf(TYPE_SCRIPT, (void *)(script_sig), NULL, script_len);
   paramvalues[i++] = data_to_buf(TYPE_BYTEA, (void *)(prev_out), NULL, 0);
-  paramvalues[i++] = data_to_buf(TYPE_STR, (void *)(witness), NULL, 0);
+  paramvalues[i++] = data_to_buf(TYPE_SCRIPT, (void *)(witness), NULL, witness_len);
 
   res = PQexecParams((PGconn *)dbSrv.db_conn, DEFAULT_SAVE_TXIN, i, NULL,
                      paramvalues, NULL, NULL, PQ_WRITE);

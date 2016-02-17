@@ -73,7 +73,6 @@ const char * Getwitness(const CTxinWitness& witness)
 const char * Getwitness1(const CTxinWitness& witness)
 {
     string str;
-    string str1;
     for (unsigned int j = 0; j < witness.scriptWitness.stack.size(); j++) {
         if (j > 0)
             str += " ";
@@ -82,6 +81,26 @@ const char * Getwitness1(const CTxinWitness& witness)
     }
     return str.c_str();
 }
+
+const char * Getwitness2(const CTxinWitness& witness, int *witness_len)
+{
+    string str;
+    for (unsigned int j = 0; j < witness.scriptWitness.stack.size(); j++) {
+        std::vector<unsigned char> item = witness.scriptWitness.stack[j];
+        if (item.size()==0)
+           continue;
+        if (j > 0)
+            str += 0x20;
+        str += std::string(item.begin(), item.end());
+    }
+
+    if (str.empty()) 
+        return NULL;
+
+    *witness_len = str.size();
+    return str.c_str();
+}
+ 
 
 int  getPoolId(const CTransaction &tx) {
 
@@ -164,7 +183,8 @@ int dbSaveTx(const CTransaction &tx) {
       uint256 hashBlockp;
       int prev_out_index = txin.prevout.n;
       uint256 prev_out = txin.prevout.hash;
-      const char *txinwitness;
+      const char *txinwitness = NULL;
+      int witness_len = 0;
 
       if (GetTransaction(txin.prevout.hash, txp, Params().GetConsensus(), hashBlockp, true)) {
         in_value += txp.vout[txin.prevout.n].nValue;
@@ -175,15 +195,26 @@ int dbSaveTx(const CTransaction &tx) {
           return -1;
       }
 
+      //if (!tx.wit.IsNull()) {
+      //      if (!tx.wit.vtxinwit[tx_idx].IsNull()) {
+      //          txinwitness = Getwitness(tx.wit.vtxinwit[tx_idx]);
+      //      }
+      //  }
+ 
       if (!tx.wit.IsNull()) {
             if (!tx.wit.vtxinwit[tx_idx].IsNull()) {
-                txinwitness = Getwitness(tx.wit.vtxinwit[tx_idx]);
+                if (!tx.wit.vtxinwit[tx_idx].scriptWitness.IsNull()) {
+                    //txinwitness = tx.wit.vtxinwit[tx_idx].scriptWitness.ToString().c_str();
+                    //txinwitness = Getwitness(tx.wit.vtxinwit[tx_idx]);
+                    //LogPrint("dblayer", "witness %x \n", txinwitness);
+                    txinwitness = Getwitness2(tx.wit.vtxinwit[tx_idx], &witness_len);
+                }
             }
-        }
- 
+      }
+
       int txin_id = dbSrv.db_ops->save_txin(
           tx_id, tx_idx, prev_out_index, txin.nSequence, &txin.scriptSig[0],
-          txin.scriptSig.size(), prev_out.begin(), txinwitness);
+          txin.scriptSig.size(), prev_out.begin(), txinwitness, witness_len);
       if (txin_id == -1) {
         LogPrint("dblayer", "save_txin error txid %d txin index %d \n", tx_id,
                  tx_idx);
