@@ -390,6 +390,7 @@ int dbSync() {
 
       if (ShutdownRequested()) {
         LogPrint("dblayer", "Shutdown requested. Exiting.");
+        syncing=false;
         return -1;
       }
 
