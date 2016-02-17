@@ -267,6 +267,14 @@ int dbSaveBlock(const CBlockIndex *blockindex, CBlock &block) {
     goto rollback;
   }
 
+  /*
+  * For these case:
+  * 1. when db reconnect 
+  * 2. multi node or thread insert db 
+  */
+  if (dbSync()==-1)
+     return -1;
+ 
   poolBip = getPoolSupportBip(&block.vtx[0].vin[0].scriptSig[0], block.vtx[0].vin[0].scriptSig.size(), version);
   pool_id = getPoolId(block.vtx[0]);
   blk_id = dbSrv.db_ops->save_blk(
