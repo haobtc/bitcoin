@@ -195,18 +195,9 @@ int dbSaveTx(const CTransaction &tx) {
           return -1;
       }
 
-      //if (!tx.wit.IsNull()) {
-      //      if (!tx.wit.vtxinwit[tx_idx].IsNull()) {
-      //          txinwitness = Getwitness(tx.wit.vtxinwit[tx_idx]);
-      //      }
-      //  }
- 
       if (!tx.wit.IsNull()) {
             if (!tx.wit.vtxinwit[tx_idx].IsNull()) {
                 if (!tx.wit.vtxinwit[tx_idx].scriptWitness.IsNull()) {
-                    //txinwitness = tx.wit.vtxinwit[tx_idx].scriptWitness.ToString().c_str();
-                    //txinwitness = Getwitness(tx.wit.vtxinwit[tx_idx]);
-                    //LogPrint("dblayer", "witness %x \n", txinwitness);
                     txinwitness = Getwitness2(tx.wit.vtxinwit[tx_idx], &witness_len);
                 }
             }
