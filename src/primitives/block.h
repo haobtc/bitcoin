@@ -28,6 +28,7 @@ public:
     uint32_t nTime;
     uint32_t nBits;
     uint32_t nNonce;
+    int64_t nTimeReceived;
 
     CBlockHeader()
     {
@@ -54,6 +55,7 @@ public:
         nTime = 0;
         nBits = 0;
         nNonce = 0;
+        nTimeReceived = 0;
     }
 
     bool IsNull() const

@@ -77,7 +77,7 @@ uint256 CTransaction::GetWitnessHash() const
     return SerializeHash(*this, SER_GETHASH, SERIALIZE_TRANSACTION_WITNESS);
 }
 
-CTransaction::CTransaction() : nVersion(CTransaction::CURRENT_VERSION), vin(), vout(), nLockTime(0) { }
+CTransaction::CTransaction() : hash(), nVersion(CTransaction::CURRENT_VERSION), vin(), vout(), nLockTime(0), nTimeReceived(0), relayIp() { }
 
 CTransaction::CTransaction(const CMutableTransaction &tx) : nVersion(tx.nVersion), vin(tx.vin), vout(tx.vout), wit(tx.wit), nLockTime(tx.nLockTime) {
     UpdateHash();
@@ -90,6 +90,8 @@ CTransaction& CTransaction::operator=(const CTransaction &tx) {
     *const_cast<CTxWitness*>(&wit) = tx.wit;
     *const_cast<unsigned int*>(&nLockTime) = tx.nLockTime;
     *const_cast<uint256*>(&hash) = tx.hash;
+    nTimeReceived = tx.nTimeReceived;                                                                                         
+    relayIp = tx.relayIp; 
     return *this;
 }
 
