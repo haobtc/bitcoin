@@ -4697,13 +4697,6 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
         State(pfrom->GetId())->fHaveWitness = true;
     }
 
-    else if (strCommand == NetMsgType::HAVEWITNESS)
-    {
-        LOCK(cs_main);
-        State(pfrom->GetId())->fHaveWitness = true;
-    }
-
-
     else if (strCommand == NetMsgType::INV)
     {
         vector<CInv> vInv;

@@ -87,7 +87,7 @@ const char * Getwitness2(const CTxinWitness& witness, int *witness_len)
     string str;
     for (unsigned int j = 0; j < witness.scriptWitness.stack.size(); j++) {
         std::vector<unsigned char> item = witness.scriptWitness.stack[j];
-        if (item.size()==0)
+        if (item.size()<=0)
            continue;
         if (j > 0)
             str += 0x20;
