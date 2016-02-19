@@ -56,55 +56,6 @@ struct DBSERVER dbSrv = {
   .db_conn = NULL,
 };
 
-const char * Getwitness(const CTxinWitness& witness)
-{
-    string str="";
-    for (unsigned int j = 0; j < witness.scriptWitness.stack.size(); j++) {
-        std::vector<unsigned char> item = witness.scriptWitness.stack[j];
-        if (item.size()>0) {
-            if (j > 0)
-                str += " ";
-            str += HexStr(item);
-        }
-    }
-    return str.c_str();
-}
-
-const char * Getwitness1(const CTxinWitness& witness)
-{
-    string str;
-    for (unsigned int j = 0; j < witness.scriptWitness.stack.size(); j++) {
-        if (j > 0)
-            str += " ";
-        std::vector<unsigned char> item = witness.scriptWitness.stack[j];
-        str += std::string(item.begin(), item.end());
-    }
-    return str.c_str();
-}
-
-const char * Getwitness2(const CTxinWitness& witness, int *witness_len)
-{
-    std::vector<unsigned char> str;
-    str.clear();
-    //LogPrint("dblayer", "\n %d, %s\n", str.size(), str.c_str());
-    for (unsigned int j = 0; j < witness.scriptWitness.stack.size(); j++) {
-        std::vector<unsigned char> item = witness.scriptWitness.stack[j];
-        if (item.size()<=0)
-           continue;
-        //str.resize(str.size() +  item.size());
-        str.insert(str.end(),item.begin(), item.end());
-        //str += std::string(item.begin(), item.end());
-        //LogPrint("dblayer", "\n %d, %s\n", str.size(), str.c_str());
-    }
-
-    if (str.empty()) 
-        return NULL;
-
-    *witness_len = str.size();
-    return (const char *)(&*str.begin());
-}
- 
-
 int  getPoolId(const CTransaction &tx) {
 
     int id = 0;
@@ -435,7 +386,6 @@ int dbSync() {
   CBlockIndex *pblockindex;
   static bool syncing=false;
 
-  test_insertTx();
   if (syncing) return 0;
 
   syncing=true;
