@@ -788,7 +788,7 @@ static int pg_query_tx(const unsigned char *hash) {
 
 int pg_save_txin(int tx_id, int tx_idx, int prev_out_index, unsigned int sequence,
                  const unsigned char *script_sig, int script_len,
-                 const unsigned char *prev_out, const char *witness, int witness_len) {
+                 const unsigned char *prev_out, const unsigned char *witness, int witness_len) {
   PGresult *res;
   ExecStatusType rescode;
   int i = 0;

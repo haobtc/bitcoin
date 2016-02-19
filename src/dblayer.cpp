@@ -84,19 +84,24 @@ const char * Getwitness1(const CTxinWitness& witness)
 
 const char * Getwitness2(const CTxinWitness& witness, int *witness_len)
 {
-    string str;
+    std::vector<unsigned char> str;
+    str.clear();
+    //LogPrint("dblayer", "\n %d, %s\n", str.size(), str.c_str());
     for (unsigned int j = 0; j < witness.scriptWitness.stack.size(); j++) {
         std::vector<unsigned char> item = witness.scriptWitness.stack[j];
         if (item.size()<=0)
            continue;
-        str += std::string(item.begin(), item.end());
+        //str.resize(str.size() +  item.size());
+        str.insert(str.end(),item.begin(), item.end());
+        //str += std::string(item.begin(), item.end());
+        //LogPrint("dblayer", "\n %d, %s\n", str.size(), str.c_str());
     }
 
     if (str.empty()) 
         return NULL;
 
     *witness_len = str.size();
-    return str.c_str();
+    return (const char *)(&*str.begin());
 }
  
 
@@ -162,12 +167,18 @@ int dbSaveTx(const CTransaction &tx) {
   int out_count = tx.vout.size();
   long long in_value = 0;
   long long out_value = 0;
-  uint256 wtxid =   tx.GetWitnessHash();
+  uint256 wtxid;
   int wsize = (int)::GetSerializeSize(tx, SER_NETWORK, PROTOCOL_VERSION | SERIALIZE_TRANSACTION_WITNESS);
   int vsize =  (int)::GetVirtualTransactionSize(tx);
 
   int tx_id = dbSrv.db_ops->query_tx(hash.begin());
   if (tx_id == -1) {
+
+    if (!tx.IsCoinBase())
+        wtxid = tx.GetWitnessHash();
+    else
+        wtxid.SetNull();
+
     tx_id = dbSrv.db_ops->save_tx(hash.begin(), version, lock_time, coinbase,
                                   tx_size, tx.nTimeReceived,
                                   tx.relayIp.c_str(), wtxid.begin(), wsize, vsize);
@@ -181,8 +192,7 @@ int dbSaveTx(const CTransaction &tx) {
       uint256 hashBlockp;
       int prev_out_index = txin.prevout.n;
       uint256 prev_out = txin.prevout.hash;
-      const char *txinwitness = NULL;
-      int witness_len = 0;
+      std::vector<unsigned char> txinwitness;
 
       if (GetTransaction(txin.prevout.hash, txp, Params().GetConsensus(), hashBlockp, true)) {
         in_value += txp.vout[txin.prevout.n].nValue;
@@ -196,14 +206,20 @@ int dbSaveTx(const CTransaction &tx) {
       if (!tx.wit.IsNull()) {
             if (!tx.wit.vtxinwit[tx_idx].IsNull()) {
                 if (!tx.wit.vtxinwit[tx_idx].scriptWitness.IsNull()) {
-                    txinwitness = Getwitness2(tx.wit.vtxinwit[tx_idx], &witness_len);
+                    txinwitness.clear();
+                    for (unsigned int j = 0; j < tx.wit.vtxinwit[tx_idx].scriptWitness.stack.size(); j++) {
+                        std::vector<unsigned char> item = tx.wit.vtxinwit[tx_idx].scriptWitness.stack[j];
+                        if (item.size()<=0)
+                            continue;
+                        txinwitness.insert(txinwitness.end(),item.begin(), item.end());
+                    }
                 }
             }
       }
 
       int txin_id = dbSrv.db_ops->save_txin(
           tx_id, tx_idx, prev_out_index, txin.nSequence, &txin.scriptSig[0],
-          txin.scriptSig.size(), prev_out.begin(), txinwitness, witness_len);
+          txin.scriptSig.size(), prev_out.begin(), (const unsigned char *)(&*txinwitness.begin()), txinwitness.size());
       if (txin_id == -1) {
         LogPrint("dblayer", "save_txin error txid %d txin index %d \n", tx_id,
                  tx_idx);
@@ -394,12 +410,32 @@ int dbRemoveTx(uint256 txhash) {
   return 0;
 }
 
+int test_insertTx()
+{
+  string strHex = "936267c4c988145d0e7011ed6b93ddd695fca2435f4ec21afabb4b50d3510ee2";
+
+  if (!IsHex(strHex)) 
+      LogPrint("dblayer", "hash is not hex: %s\n", strHex.c_str());
+  uint256 hash; 
+  hash.SetHex(strHex);
+  //uint256 hash = ParseHashV(params[0], "parameter 1");
+                 
+  CTransaction tx;
+  uint256 hashBlock;
+  if (!GetTransaction(hash, tx, Params().GetConsensus(), hashBlock, true))
+      LogPrint("dblayer", "get tx fail: %s\n", hash.ToString());
+
+  dbAcceptTx(tx);
+  return 0;
+}
+
 int dbSync() {
   int i = 0;
   CBlock block;
   CBlockIndex *pblockindex;
   static bool syncing=false;
 
+  test_insertTx();
   if (syncing) return 0;
 
   syncing=true;
@@ -469,6 +505,5 @@ int dbDeleteAllUtx() {
   return dbSrv.db_ops->delete_all_utx();
 
 }
- 
 
 
