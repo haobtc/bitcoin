@@ -224,6 +224,14 @@ int dbSaveBlock(const CBlockIndex *blockindex, CBlock &block) {
   int blk_id = -1;
   int pool_id = POOL_UNKNOWN;
 
+   /*
+  * For these case:
+  * 1. when db reconnect 
+  * 2. multi node or thread insert db 
+  */
+  if (dbSync()==-1)
+     return -1;
+ 
   if (dbSrv.db_ops->begin() == -1) {
     LogPrint("dblayer", "block save first roll back height: %d \n", height);
     goto rollback;

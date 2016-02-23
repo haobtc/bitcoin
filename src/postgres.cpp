@@ -381,8 +381,6 @@ static bool pg_conncheck(void) {
       return false;
     }
     
-    if (dbSync()==-1)
-        return false;
   }
   return true;
 }
