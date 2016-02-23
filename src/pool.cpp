@@ -180,6 +180,7 @@ static struct PoolPrefix poolPrefixes[] = {
     {"/Kano", POOL_KANO_CKPOOL},
     {"/solo.ckpool.org/", POOL_SOLO_CKPOOL},
     {"ckpool/mined by devastra/", POOL_CKPOOL_DEVASTRA},
+    {"ckpool", POOL_CKPOOL},
     {"/NiceHashSolo", POOL_NICEHASH_SOLO},
     {"/BitClub Network/", POOL_BITCLUB_NETWORK},
     {"bitcoinaffiliatenetwork.com", POOL_BITCOIN_AFFILIATE_NETWORK},
