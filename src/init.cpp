@@ -1426,8 +1426,8 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
                         break;
                     }
                 }
- 
-                if (dbSync() == -1) {
+
+                if (dbSync(0) == -1) {
                     strLoadError = _("Error sql database sync...");
                     break;
                 }

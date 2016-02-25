@@ -230,7 +230,7 @@ int dbSaveBlock(const CBlockIndex *blockindex, CBlock &block) {
   * 1. when db reconnect 
   * 2. multi node or thread insert db 
   */
-  if (dbSync()==-1)
+  if (dbSync(height)==-1)
      return -1;
  
   if (dbSrv.db_ops->begin() == -1) {
@@ -337,7 +337,6 @@ int dbRemoveTx(uint256 txhash) {
   return 0;
 }
 
- 
 int testGetPool() {
   int i = 0;
   CBlock block;
@@ -411,7 +410,8 @@ int testGetPool1() {
 
   return 0;
 }
-int dbSync() {
+
+int dbSync(int newHeight) {
   int i = 0;
   CBlock block;
   CBlockIndex *pblockindex;
@@ -425,6 +425,13 @@ int dbSync() {
   if (maxHeight == -1) {
         syncing=false;
         return -1;
+  }
+
+  if (maxHeight + 1 == newHeight)
+  {
+    LogPrint("dblayer", "maxHeight in db: %d, newHeight: %d\n", maxHeight, newHeight);
+
+    return 0;
   }
 
   // syndb
