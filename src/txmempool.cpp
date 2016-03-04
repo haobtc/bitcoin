@@ -489,7 +489,6 @@ void CTxMemPool::remove(const CTransaction &origTx, std::list<CTransaction>& rem
         if (fRecursive) {
             BOOST_FOREACH(txiter it, txToRemove) {
                 CalculateDescendants(it, setAllRemoves);
-                dbRemoveTx(it->GetTx().GetHash()); 
             }
         } else {
             setAllRemoves.swap(txToRemove);
@@ -497,7 +496,7 @@ void CTxMemPool::remove(const CTransaction &origTx, std::list<CTransaction>& rem
         BOOST_FOREACH(txiter it, setAllRemoves) {
             removed.push_back(it->GetTx());
         }
-        RemoveStaged(setAllRemoves);
+        RemoveStaged(setAllRemoves, fRecursive);
     }
 }
 
@@ -851,11 +850,13 @@ size_t CTxMemPool::DynamicMemoryUsage() const {
     return memusage::MallocUsage(sizeof(CTxMemPoolEntry) + 12 * sizeof(void*)) * mapTx.size() + memusage::DynamicUsage(mapNextTx) + memusage::DynamicUsage(mapDeltas) + memusage::DynamicUsage(mapLinks) + cachedInnerUsage;
 }
 
-void CTxMemPool::RemoveStaged(setEntries &stage) {
+void CTxMemPool::RemoveStaged(setEntries &stage, bool fRemoveFromDb) {
     AssertLockHeld(cs);
     UpdateForRemoveFromMempool(stage);
     BOOST_FOREACH(const txiter& it, stage) {
         removeUnchecked(it);
+        if (fRemoveFromDb)
+            dbRemoveTx(it->GetTx().GetHash()); 
     }
 }
 
@@ -871,7 +872,7 @@ int CTxMemPool::Expire(int64_t time) {
     BOOST_FOREACH(txiter removeit, toremove) {
         CalculateDescendants(removeit, stage);
     }
-    RemoveStaged(stage);
+    RemoveStaged(stage, true);
     return stage.size();
 }
 
@@ -980,7 +981,7 @@ void CTxMemPool::TrimToSize(size_t sizelimit, std::vector<uint256>* pvNoSpendsRe
             BOOST_FOREACH(txiter it, stage)
                 txn.push_back(it->GetTx());
         }
-        RemoveStaged(stage);
+        RemoveStaged(stage, true);
         if (pvNoSpendsRemaining) {
             BOOST_FOREACH(const CTransaction& tx, txn) {
                 BOOST_FOREACH(const CTxIn& txin, tx.vin) {
