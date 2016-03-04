@@ -80,7 +80,7 @@ int  dbDisconnectBlock(CBlock &block);
 int  dbSaveTx(const CTransaction &tx);
 int  dbAcceptTx(const CTransaction &tx);
 int  dbRemoveTx(uint256 txhash);
-int  dbSync();
+int  dbSync(int newHeight);
 int  dbDeleteAllUtx();
 
 #ifdef HAVE_SQLITE3
