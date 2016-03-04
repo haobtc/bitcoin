@@ -446,7 +446,7 @@ public:
     /** Remove a set of transactions from the mempool.
      *  If a transaction is in this set, then all in-mempool descendants must
      *  also be in the set.*/
-    void RemoveStaged(setEntries &stage);
+    void RemoveStaged(setEntries &stage, bool fRemoveFromDb);
 
     /** When adding transactions from a disconnected block back to the mempool,
      *  new mempool entries may have children in the mempool (which is generally
