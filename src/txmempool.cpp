@@ -418,7 +418,7 @@ bool CTxMemPool::addUnchecked(const uint256& hash, const CTxMemPoolEntry &entry,
     return true;
 }
 
-void CTxMemPool::removeUnchecked(txiter it)
+void CTxMemPool::removeUnchecked(txiter it, bool fRemoveFromDb)
 {
     const uint256 hash = it->GetTx().GetHash();
     BOOST_FOREACH(const CTxIn& txin, it->GetTx().vin)
@@ -431,6 +431,8 @@ void CTxMemPool::removeUnchecked(txiter it)
     mapTx.erase(it);
     nTransactionsUpdated++;
     minerPolicyEstimator->removeTx(hash);
+    if (fRemoveFromDb)
+        dbRemoveTx(hash); 
 }
 
 // Calculates descendants of entry that are not already in setDescendants, and adds to
@@ -854,9 +856,7 @@ void CTxMemPool::RemoveStaged(setEntries &stage, bool fRemoveFromDb) {
     AssertLockHeld(cs);
     UpdateForRemoveFromMempool(stage);
     BOOST_FOREACH(const txiter& it, stage) {
-        removeUnchecked(it);
-        if (fRemoveFromDb)
-            dbRemoveTx(it->GetTx().GetHash()); 
+        removeUnchecked(it, fRemoveFromDb);
     }
 }
 

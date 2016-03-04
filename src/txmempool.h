@@ -573,7 +573,7 @@ private:
      *  transactions in a chain before we've updated all the state for the
      *  removal.
      */
-    void removeUnchecked(txiter entry);
+    void removeUnchecked(txiter entry, bool fRemoveFromDb);
 };
 
 /** 
