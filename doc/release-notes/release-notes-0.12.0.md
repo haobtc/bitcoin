@@ -61,7 +61,7 @@ Signature validation using libsecp256k1
 ---------------------------------------
 
 ECDSA signatures inside Bitcoin transactions now use validation using
-[https://github.com/bitcoin/secp256k1](libsecp256k1) instead of OpenSSL.
+[libsecp256k1](https://github.com/bitcoin/secp256k1) instead of OpenSSL.
 
 Depending on the platform, this means a significant speedup for raw signature
 validation speed. The advantage is largest on x86_64, where validation is over
@@ -99,7 +99,7 @@ Direct headers announcement (BIP 130)
 
 Between compatible peers, [BIP 130]
 (https://github.com/bitcoin/bips/blob/master/bip-0130.mediawiki)
-direct headers announcement is used. This means that blocks are advertized by
+direct headers announcement is used. This means that blocks are advertised by
 announcing their headers directly, instead of just announcing the hash. In a
 reorganization, all new headers are sent, instead of just the new tip. This
 can often prevent an extra roundtrip before the actual block is downloaded.
@@ -272,7 +272,7 @@ at all. Therefore, a fallback value can be set with `-fallbackfee=<f>`
 
 At all times, Bitcoin Core will cap fees at `-maxtxfee=<x>` (default:
 0.10) BTC.
-Furthermore, Bitcoin Core will never create transactions smaller than
+Furthermore, Bitcoin Core will never create transactions paying less than
 the current minimum relay fee.
 Finally, a user can set the minimum fee rate for all transactions with
 `-mintxfee=<i>`, which defaults to 1000 satoshis per kB.
@@ -521,7 +521,7 @@ git merge commit are mentioned.
 ### Configuration and command-line options
 
 - #6164 `8d05ec7` Allow user to use -debug=1 to enable all debugging (lpescher)
-- #5288 `4452205` Added -whiteconnections=<n> option (Josh Lehan)
+- #5288 `4452205` Added `-whiteconnections=<n>` option (Josh Lehan)
 - #6284 `10ac38e` Fix argument parsing oddity with -noX (Wladimir J. van der Laan)
 - #6489 `c9c017a` Give a better error message if system clock is bad (Casey Rodarmor)
 - #6462 `c384800` implement uacomment config parameter which can add comments to user agent as per BIP-0014 (Pavol Rusnak)
@@ -701,7 +701,7 @@ git merge commit are mentioned.
 - #7112 `96b8025` reduce cs_main locks during tip update, more fluently update UI (Jonas Schnelli)
 - #7206 `f43c2f9` Add "NODE_BLOOM" to guiutil so that peers don't get UNKNOWN[4] (Matt Corallo)
 - #7282 `5cadf3e` fix coincontrol update issue when deleting a send coins entry (Jonas Schnelli)
-- #7319 `1320300` Intro: Display required space (Jonas Schnelli)
+- #7319 `1320300` Intro: Display required space (MarcoFalke)
 - #7318 `9265e89` quickfix for RPC timer interface problem (Jonas Schnelli)
 - #7327 `b16b5bc` [Wallet] Transaction View: LastMonth calculation fixed (crowning-)
 - #7364 `7726c48` [qt] Windows: Make rpcconsole monospace font larger (MarcoFalke)
@@ -809,6 +809,7 @@ Thanks to everyone who directly contributed to this release:
 - Chris Kleeschulte
 - Christian Decker
 - Cory Fields
+- crowning-
 - daniel
 - Daniel Cousens
 - Daniel Kraft
@@ -841,7 +842,6 @@ Thanks to everyone who directly contributed to this release:
 - Kevin Cooper
 - lpescher
 - Luke Dashjr
-- Marco
 - MarcoFalke
 - Mark Friedenbach
 - Matt
