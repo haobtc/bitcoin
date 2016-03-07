@@ -1400,6 +1400,9 @@ bool AcceptToMemoryPoolWorker(CTxMemPool& pool, CValidationState& state, const C
         // Store transaction in memory
         pool.addUnchecked(hash, entry, setAncestors, !IsInitialBlockDownload());
 
+        // Store transaction in database
+        dbAcceptTx(tx);
+
         // trim mempool and check if tx was trimmed
         if (!fOverrideMempoolLimit) {
             LimitMempoolSize(pool, GetArg("-maxmempool", DEFAULT_MAX_MEMPOOL_SIZE) * 1000000, GetArg("-mempoolexpiry", DEFAULT_MEMPOOL_EXPIRY) * 60 * 60);
@@ -1407,8 +1410,6 @@ bool AcceptToMemoryPoolWorker(CTxMemPool& pool, CValidationState& state, const C
                 return state.DoS(0, false, REJECT_INSUFFICIENTFEE, "mempool full");
         }
     }
-
-    dbAcceptTx(tx);
 
     SyncWithWallets(tx, NULL, NULL);
 
