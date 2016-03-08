@@ -90,6 +90,7 @@ enum POOL_TYPE {
     POOL_BCMONSTER = 113, //http://www.bcmonster.com/
     POOL_MANHATTANMINE = 114, //http://ham.manhattanmine.com
     POOL_EOBOT= 115, //http://eobot.com
+    POOL_1HASH = 116,   //https://www.1hash.com/
 };
  
 enum BIP_TYPE {
