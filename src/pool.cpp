@@ -98,6 +98,7 @@ static struct PoolAddr poolAddresses[] = {
     {"1AePMyovoijxvHuKhTqWvpaAkRCF4QswC6", POOL_TRICKYS},
     {"19f8Pk3m1GySyowWb8qLy93R5ngAUoVoUE", POOL_MANHATTANMINE},
     {"1MPxhNkSzeTNTHSZAibMaS8HS1esmUL1ne", POOL_EOBOT},
+    {"1F1xcRt8H8Wa623KqmkEontwAAVqDSAWCV", POOL_1HASH},
     {"1KTNEBhQdj81UhDkJaoe3r8VtAsrnmpmnS", POOL_UNKNOWN},
     {"1Ar2gRkt1u6k4PToeeTKm1KGmtR2GRA1wL", POOL_UNKNOWN},
     {"18UBaMPq6FQfXnKT19rXc8bFFFwQz52Bc1", POOL_UNKNOWN},
@@ -211,6 +212,7 @@ static struct PoolPrefix poolPrefixes[] = {
     {"/Nexious/", POOL_NEXIOUS},
     {"Bravo Mining", POOL_BRAVO},
     {"p2pool", POOL_P2POOL},
+    {"Mined by 1hash.com", POOL_1HASH},
     {"/BCMonster/", POOL_BCMONSTER}
 };
 
