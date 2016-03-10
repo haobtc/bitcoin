@@ -518,6 +518,7 @@ std::string HelpMessage(HelpMessageMode mode)
     }
 
     strUsage += "\n" + _("database options:") + "\n";
+    strUsage += "  -savetodb=<true>\n";
     strUsage += "  -dbname=<database name>\n";
     strUsage += "  -dbhost=<host>\n";
     strUsage += "  -dbport=<port>\n";
@@ -1147,10 +1148,12 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
 #endif // ENABLE_WALLET
     // ********************************************************* Step 6: network initialization
 
-    uiInterface.InitMessage(_("dbOpen begin..."));
-    if (!dbOpen())
-        return InitError(_("Error connect database fail!"));
-    uiInterface.InitMessage(_("dbOpen end..."));
+    if  (GetArg("-savetodb", true)) {
+        uiInterface.InitMessage(_("dbOpen begin..."));
+        if (!dbOpen())
+            return InitError(_("Error connect database fail!"));
+        uiInterface.InitMessage(_("dbOpen end..."));
+        }
 
     RegisterNodeSignals(GetNodeSignals());
 
@@ -1407,21 +1410,24 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
                     break;
                 }
 
-                uiInterface.InitMessage(_("dbSync begin..."));
 
-                bool deleteallutx = GetArg("-deleteallutx", true);
-                if  (deleteallutx) {
-                    if (dbDeleteAllUtx() == -1) {
-                        strLoadError = _("Error delete all utx from database...");
+                if  (GetArg("-savetodb", true)) 
+                    {
+                    uiInterface.InitMessage(_("dbSync begin..."));
+                    bool deleteallutx = GetArg("-deleteallutx", true);
+                    if  (deleteallutx) {
+                        if (dbDeleteAllUtx() == -1) {
+                            strLoadError = _("Error delete all utx from database...");
+                            break;
+                        }
+                    }
+
+                    if (dbSync(0) == -1) {
+                        strLoadError = _("Error sql database sync...");
                         break;
                     }
-                }
-
-                if (dbSync(0) == -1) {
-                    strLoadError = _("Error sql database sync...");
-                    break;
-                }
-                uiInterface.InitMessage(_("dbSync end..."));
+                    uiInterface.InitMessage(_("dbSync end..."));
+                    }
             } catch (const std::exception& e) {
                 if (fDebug) LogPrintf("%s\n", e.what());
                 strLoadError = _("Error opening block database");
