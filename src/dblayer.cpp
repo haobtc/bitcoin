@@ -204,6 +204,10 @@ int dbSaveTx(const CTransaction &tx) {
 }
 
 int dbSaveBlock(const CBlockIndex *blockindex, CBlock &block) {
+
+  if (!GetArg("-savetodb", true))
+      return 0;
+
   uint256 hash = block.GetHash();
   uint256 prev_hash;
 
@@ -292,6 +296,9 @@ rollback:
 
 int dbAcceptTx(const CTransaction &tx) {
 
+  if (!GetArg("-savetodb", true))
+      return 0;
+
   if (dbSrv.db_ops->begin() == -1) {
     LogPrint("dblayer", "dbAcceptTx roll back: %s \n", tx.GetHash().ToString());
     dbSrv.db_ops->rollback();
@@ -315,6 +322,9 @@ int dbAcceptTx(const CTransaction &tx) {
 }
 
 int dbRemoveTx(uint256 txhash) {
+  if (!GetArg("-savetodb", true))
+      return 0;
+
   int txid = dbSrv.db_ops->query_tx(txhash.begin());
   if (txid == -1) {
     LogPrint("dblayer", "dbRemoveTx: tx: %s  not in database  \n", txhash.ToString());
