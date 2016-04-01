@@ -1153,7 +1153,7 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
 #endif // ENABLE_WALLET
     // ********************************************************* Step 6: network initialization
 
-    if  (GetArg("-savetodb", true)) {
+    if  (GetArg("-savetodb", false)) {
         uiInterface.InitMessage(_("dbOpen begin..."));
         if (!dbOpen())
             return InitError(_("Error connect database fail!"));
@@ -1416,7 +1416,7 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
                 }
 
 
-                if  (GetArg("-savetodb", true)) 
+                if  (GetArg("-savetodb", false)) 
                     {
                     uiInterface.InitMessage(_("dbSync begin..."));
                     bool deleteallutx = GetArg("-deleteallutx", true);
