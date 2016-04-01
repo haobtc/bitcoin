@@ -95,6 +95,13 @@ def sync_mempools(rpc_connections, wait=1):
             break
         time.sleep(wait)
 
+def wait_peers(node, n_expected):
+    """
+    Wait until node has n_expected peers connected
+    """
+    while node.getconnectioncount() != n_expected:
+        time.sleep(1)
+
 bitcoind_processes = {}
 
 def initialize_datadir(dirname, n):
