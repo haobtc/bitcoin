@@ -91,6 +91,7 @@ enum POOL_TYPE {
     POOL_MANHATTANMINE = 114, //http://ham.manhattanmine.com
     POOL_EOBOT= 115, //http://eobot.com
     POOL_1HASH = 116,   //https://www.1hash.com/
+    POOL_UNOMP = 117,   //http://199.115.116.7:8925/
 };
  
 enum BIP_TYPE {
