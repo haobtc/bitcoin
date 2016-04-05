@@ -29,7 +29,12 @@ class MempoolSaveTest(BitcoinTestFramework):
         self.is_network_split = False
         self.sync_all()
  
-    def run_test(nodes, test_dir):
+    def run_test(self):
+        self.nodes[1].generate(1)
+        self.sync_all()
+        self.nodes[0].generate(101)
+        self.sync_all()
+ 
         # Three transactions for the memory pools. Each node gets a send-to-self
         # (which only they care about, and will restore to memory pool from wallet
         # at startup) and sends back-and-forth:
@@ -39,26 +44,17 @@ class MempoolSaveTest(BitcoinTestFramework):
         txid4 = self.nodes[1].sendtoaddress(self.nodes[0].getnewaddress(), 0.41)
     
         # wait for mempools to sync
-        sync_mempools(nodes)
-        assert_equal(len(nodes[0].getrawmempool()), 4)
-        assert_equal(len(nodes[1].getrawmempool()), 4)
+        sync_mempools(self.nodes)
+        assert_equal(len(self.nodes[0].getrawmempool()), 4)
+        assert_equal(len(self.nodes[1].getrawmempool()), 4)
         
         # restart nodes; their memory pools should restore on restart.
-        stop_nodes(nodes)
+        stop_nodes(self.nodes)
         wait_bitcoinds()
-        nodes[:] = start_nodes(2, test_dir)
-        assert_equal(len(nodes[0].getrawmempool()), 4)
-        assert_equal(len(nodes[1].getrawmempool()), 4)
+        self.nodes = start_nodes(2, self.options.tmpdir)
+        assert_equal(len(self.nodes[0].getrawmempool()), 4)
+        assert_equal(len(self.nodes[1].getrawmempool()), 4)
     
-    def add_options(self, parser):
-        parser = optparse.OptionParser(usage="%prog [options]")
-        parser.add_option("--nocleanup", dest="nocleanup", default=False, action="store_true",
-                          help="Leave bitcoinds and test.* datadir on exit or error")
-        parser.add_option("--srcdir", dest="srcdir", default="../../src",
-                          help="Source directory containing bitcoind/bitcoin-cli (default: %default%)")
-        parser.add_option("--tmpdir", dest="tmpdir", default=tempfile.mkdtemp(prefix="test"),
-                          help="Root directory for datadirs")
-
     def setup_chain(self):
         print("Initializing test directory "+self.options.tmpdir)
         initialize_chain(self.options.tmpdir)
