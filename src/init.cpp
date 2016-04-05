@@ -1478,24 +1478,6 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
         mempool.ReadFeeEstimates(est_filein);
     fFeeEstimatesInitialized = true;
 
-    if (GetArg("-savemempool", true)) {
-        // It is OK if mempool.Read() fails; starting out with an empty memory pool is not
-        // a problem, it gets filled quickly.
-        list<CTxMemPoolEntry> mempoolEntries;
-        if (mempool.Read(mempoolEntries) && !(mempoolEntries.empty()))
-        {
-            CValidationState valState;
-            bool fMissingInputs;
-            BOOST_FOREACH(CTxMemPoolEntry& mempoolEntry, mempoolEntries)
-            {
-                AcceptToMemoryPool(mempool, valState, mempoolEntry.GetTx(), false,
-                                   &fMissingInputs, false);
-            }
-            LogPrintf("Accepted %lu mempool transactions\n", mempool.size());
-        }
-    }
-
-
     // ********************************************************* Step 8: load wallet
 #ifdef ENABLE_WALLET
     if (fDisableWallet) {
@@ -1685,7 +1667,26 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
         while (!fRequestShutdown && chainActive.Tip() == NULL)
             MilliSleep(10);
     }
+ 
+    if (GetArg("-savemempool", true)) {
 
+        LOCK(cs_main);
+        // It is OK if mempool.Read() fails; starting out with an empty memory pool is not
+        // a problem, it gets filled quickly.
+        list<CTxMemPoolEntry> mempoolEntries;
+        if (mempool.Read(mempoolEntries) && !(mempoolEntries.empty()))
+        {
+            CValidationState valState;
+            bool fMissingInputs;
+            BOOST_FOREACH(CTxMemPoolEntry& mempoolEntry, mempoolEntries)
+            {
+                AcceptToMemoryPool(mempool, valState, mempoolEntry.GetTx(), false,
+                                   &fMissingInputs, false);
+            }
+            LogPrintf("Accepted %lu mempool transactions\n", mempool.size());
+        }
+    }
+ 
     // ********************************************************* Step 11: start node
 
     if (!CheckDiskSpace())
