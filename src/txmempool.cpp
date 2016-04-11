@@ -845,10 +845,11 @@ bool CTxMemPool::Read(std::list<CTxMemPoolEntry>& vecEntries) const
             CAmount inChainInputValue; //! Sum of all txin values that are already in blockchain
             bool fSpendsCoinbase; //! keep track of transactions that spend a coinbase
             unsigned int nSigOps; //! Legacy sig ops plus P2SH sig op count
+            LockPoints lp;
 
             filein >> tx >> nFee >> nTime >> dPriority >> nHeight >> hadNoDependencies >> inChainInputValue >> fSpendsCoinbase >> nSigOps;
  
-            CTxMemPoolEntry e(tx, nFee, nTime, dPriority, nHeight, hadNoDependencies, inChainInputValue, fSpendsCoinbase, nSigOps);
+            CTxMemPoolEntry e(tx, nFee, nTime, dPriority, nHeight, hadNoDependencies, inChainInputValue, fSpendsCoinbase, nSigOps, lp);
             vecEntries.push_back(e);
         }
     }
