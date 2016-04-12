@@ -204,8 +204,7 @@ int dbSaveTx(const CTransaction &tx) {
 }
 
 int dbSaveBlock(const CBlockIndex *blockindex, CBlock &block) {
-
-  if (!GetArg("-savetodb", false))
+  if (!GetArg("-savetodb", true))
       return 0;
 
   uint256 hash = block.GetHash();
@@ -295,8 +294,7 @@ rollback:
 }
 
 int dbAcceptTx(const CTransaction &tx) {
-
-  if (!GetArg("-savetodb", false))
+  if (!GetArg("-savetodb", true))
       return 0;
 
   if (dbSrv.db_ops->begin() == -1) {
@@ -322,7 +320,7 @@ int dbAcceptTx(const CTransaction &tx) {
 }
 
 int dbRemoveTx(uint256 txhash) {
-  if (!GetArg("-savetodb", false))
+  if (!GetArg("-savetodb", true))
       return 0;
 
   int txid = dbSrv.db_ops->query_tx(txhash.begin());

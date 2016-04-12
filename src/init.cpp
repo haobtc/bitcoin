@@ -213,7 +213,7 @@ void Shutdown()
         fFeeEstimatesInitialized = false;
     }
 
-    if (GetArg("-savemempool", true))
+    if (GetArg("-savemempool", false))
         mempool.Write();
 
     {
@@ -529,7 +529,7 @@ std::string HelpMessage(HelpMessageMode mode)
     strUsage += "  -dbuser=<username>\n";
     strUsage += "  -dbpass=<password>\n";
     strUsage += "  -deleteallutx=<true>\n";
-    strUsage += "  -savemempool=<true>\n";
+    strUsage += "  -savemempool=<false>\n";
     return strUsage;
 }
 
@@ -1147,12 +1147,12 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
 #endif // ENABLE_WALLET
     // ********************************************************* Step 6: network initialization
 
-    if  (GetArg("-savetodb", false)) {
+    if  (GetArg("-savetodb", true)) {
         uiInterface.InitMessage(_("dbOpen begin..."));
         if (!dbOpen())
             return InitError(_("Error connect database fail!"));
         uiInterface.InitMessage(_("dbOpen end..."));
-        }
+    }
 
     RegisterNodeSignals(GetNodeSignals());
 
@@ -1410,8 +1410,7 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
                 }
 
 
-                if  (GetArg("-savetodb", false)) 
-                    {
+                if  (GetArg("-savetodb", true)) {
                     uiInterface.InitMessage(_("dbSync begin..."));
                     bool deleteallutx = GetArg("-deleteallutx", true);
                     if  (deleteallutx) {
@@ -1426,7 +1425,7 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
                         break;
                     }
                     uiInterface.InitMessage(_("dbSync end..."));
-                    }
+                }
             } catch (const std::exception& e) {
                 if (fDebug) LogPrintf("%s\n", e.what());
                 strLoadError = _("Error opening block database");
@@ -1662,7 +1661,7 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
             MilliSleep(10);
     }
  
-    if (GetArg("-savemempool", true)) {
+    if (GetArg("-savemempool", false)) {
 
         LOCK(cs_main);
         // It is OK if mempool.Read() fails; starting out with an empty memory pool is not
