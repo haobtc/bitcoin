@@ -439,8 +439,7 @@ int dbSync(int newHeight) {
 
   if (maxHeight + 1 == newHeight)
   {
-    LogPrint("dblayer", "maxHeight in db: %d, newHeight: %d\n", maxHeight, newHeight);
-
+    syncing=false;
     return 0;
   }
 
@@ -451,6 +450,7 @@ int dbSync(int newHeight) {
     for (; i < (chainActive.Height() + 1); i++) {
 
       if (ShutdownRequested()) {
+        syncing=false;
         LogPrint("dblayer", "Shutdown requested. Exiting.");
         syncing=false;
         return -1;
