@@ -74,7 +74,8 @@ enum data_type {
 
 typedef struct timeval tv_t;
 
-#define DEFAULT_SELECT_BLK "select id from blk where hash=$1::bytea"
+#define DEFAULT_SELECT_BLK "select id,orphan from blk where hash=$1::bytea"
+#define DEFAULT_UPDATE_BLK "update blk set orphan=false where id=$1"
 #define DEFAULT_SELECT_TX "select id from tx where hash=$1::bytea"
 #define DEFAULT_SELECT_ADDR_OUT "select * from addr_txout where addr_id=$1::bigint and txout_id=$2::bigint"
 
@@ -474,7 +475,7 @@ static int pg_query_maxHeight() {
   ExecStatusType rescode;
   int height = 0;
 
-  res = PQexec((PGconn *)dbSrv.db_conn, "select max(height) from blk");
+  res = PQexec((PGconn *)dbSrv.db_conn, "select max(height) from blk where orhpan!=true");
   rescode = PQresultStatus(res);
   if (!PGOK(rescode)) {
     LogPrint("dblayer", "pg_query_maxHeight error: %s\n",
@@ -487,11 +488,33 @@ static int pg_query_maxHeight() {
   return height;
 }
 
+static int pg_update_blk(unsigned int blkId) {
+  PGresult *res;
+  ExecStatusType rescode;
+  const char *paramvalues[1];
+  paramvalues[0] = data_to_buf(TYPE_INT, (void *)(blkId), NULL, 0);
+  res = PQexecParams((PGconn *)dbSrv.db_conn, DEFAULT_UPDATE_BLK, 1, NULL, paramvalues, NULL, NULL, PQ_READ);
+  free((char *)paramvalues[0]);
+
+  rescode = PQresultStatus(res);
+  if (!PGOK(rescode)) {
+      LogPrint("dblayer", "pg_update_blk error: %s\n",
+               PQerrorMessage((const PGconn *)dbSrv.db_conn));
+      PQclear(res);
+      return -1;
+      }
+
+  PQclear(res);
+  return 0;
+}
+ 
+
 static int pg_query_blk(unsigned char *hash) {
   PGresult *res;
   ExecStatusType rescode;
   int i = 0;
   int id = 0;
+  bool orphan = false;
   const char *paramvalues[1];
 
   paramvalues[i++] = data_to_buf(TYPE_HASH, (void *)(hash), NULL, 0);
@@ -508,8 +531,12 @@ static int pg_query_blk(unsigned char *hash) {
     return -1;
   }
 
-  if (PQntuples(res) > 0)
-    id = ntohl(*((int *)PQgetvalue(res, 0, 0)));
+  if (PQntuples(res) > 0) {
+    id = atoi(PQgetvalue(res, 0, 0));
+    orphan = *((bool *)PQgetvalue(res, 0, 1));
+    if (orphan == true) 
+        pg_update_blk(id);
+    }
   else
     id = -1;
 
