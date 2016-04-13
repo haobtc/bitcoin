@@ -163,6 +163,7 @@ BITCOIN_CORE_H = \
   utiltime.h \
   validationinterface.h \
   version.h \
+  versionbits.h \
   wallet/crypter.h \
   wallet/db.h \
   wallet/wallet.h \
@@ -217,6 +218,7 @@ libbitcoin_server_a_SOURCES = \
   dblayer.cpp \
   postgres.cpp \
   pool.cpp \
+  versionbits.cpp \
   $(BITCOIN_CORE_H)
 
 if ENABLE_ZMQ
