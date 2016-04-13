@@ -57,6 +57,7 @@ This specific backport pull-request can be viewed at
 [BIP9]: https://github.com/bitcoin/bips/blob/master/bip-0009.mediawiki
 [BIP68]: https://github.com/bitcoin/bips/blob/master/bip-0068.mediawiki
 [BIP112]: https://github.com/bitcoin/bips/blob/master/bip-0112.mediawiki
+[BIP113]: https://github.com/bitcoin/bips/blob/master/bip-0113.mediawiki
 
 BIP68 soft fork to enforce sequence locks for relative locktime
 ---------------------------------------------------------------
@@ -159,6 +160,7 @@ git merge commit are mentioned.
 
 ### Validation
 - #7821 `4226aac` init: allow shutdown during 'Activating best chain...' (laanwj)
+- #7835 `46898e7` Version 2 transactions remain non-standard until CSV activates (sdaftuar)
 
 ### Build system
 - #7487 `00d57b4` Workaround Travis-side CI issues (luke-jr)
