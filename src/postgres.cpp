@@ -475,7 +475,7 @@ static int pg_query_maxHeight() {
   ExecStatusType rescode;
   int height = 0;
 
-  res = PQexec((PGconn *)dbSrv.db_conn, "select max(height) from blk where orhpan!=true");
+  res = PQexec((PGconn *)dbSrv.db_conn, "select max(height) from blk where orphan!=true");
   rescode = PQresultStatus(res);
   if (!PGOK(rescode)) {
     LogPrint("dblayer", "pg_query_maxHeight error: %s\n",
