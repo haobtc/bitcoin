@@ -432,9 +432,9 @@ int dbSync(int newHeight) {
   syncing=true;
 
   int maxHeight = dbSrv.db_ops->query_maxHeight();
-  if (maxHeight == -1) {
+  if (maxHeight == -1) {//db connect lost or first sync
         syncing=false;
-        return -1;
+        return 0;
   }
 
   if (maxHeight + 1 == newHeight)
