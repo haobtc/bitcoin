@@ -642,7 +642,7 @@ static int pg_readd_blk(unsigned char *hash)
 
   /* PG does a fine job with timestamps so we won't bother. */
 
-  paramvalues[i++] = data_to_buf(TYPE_BYTEA, (void *)(hash), NULL, 0);
+  paramvalues[0] = data_to_buf(TYPE_BYTEA, (void *)(hash), NULL, 0);
 
   res = PQexecParams((PGconn *)dbSrv.db_conn, DEFAULT_SAVE_BLK, 1, NULL,
                      paramvalues, NULL, NULL, PQ_WRITE);
