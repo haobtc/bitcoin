@@ -638,8 +638,6 @@ static int pg_readd_blk(unsigned char *hash)
 {
   PGresult *res;
   ExecStatusType rescode;
-  int i = 0;
-  int n = 0;
   int id = 0;
   const char *paramvalues[1];
 
@@ -647,10 +645,10 @@ static int pg_readd_blk(unsigned char *hash)
 
   paramvalues[i++] = data_to_buf(TYPE_BYTEA, (void *)(hash), NULL, 0);
 
-  res = PQexecParams((PGconn *)dbSrv.db_conn, DEFAULT_SAVE_BLK, i, NULL,
+  res = PQexecParams((PGconn *)dbSrv.db_conn, DEFAULT_SAVE_BLK, 1, NULL,
                      paramvalues, NULL, NULL, PQ_WRITE);
 
-  free((char *)paramvalues[i]);
+  free((char *)paramvalues[0]);
 
   rescode = PQresultStatus(res);
   if (!PGOK(rescode)) {
