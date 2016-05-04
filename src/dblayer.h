@@ -38,6 +38,7 @@ struct SERVER_DB_OPS {
   int (*save_tx)(unsigned char *hash, int version, int lock_time, bool coinbase,
                  int tx_size,  long long recv_time,
                  const char *ip);
+  int (*readd_tx)(int txId);
   int (*save_utx)(int txid);
   int (*save_txin)(int tx_id, int tx_idx, int prev_out_index, unsigned int sequence,
                    const unsigned char *script_sig, int script_len,

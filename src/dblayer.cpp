@@ -200,6 +200,12 @@ int dbSaveTx(const CTransaction &tx) {
     dbSrv.db_ops->add_tx_statics(tx_id, in_count, out_count, in_value,
                                  out_value);
   }
+  else if (tx_id > 0) {
+    dbSrv.db_ops->readd_tx(tx_id);
+  }
+  else
+    LogPrint("dblayer", "save tx fail : %d\n", tx_id);
+
   return tx_id;
 }
 
