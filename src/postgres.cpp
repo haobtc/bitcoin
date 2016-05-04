@@ -498,7 +498,6 @@ static int pg_query_blk(unsigned char *hash) {
   ExecStatusType rescode;
   int i = 0;
   int id = 0;
-  bool orphan = false;
   const char *paramvalues[1];
 
   paramvalues[i++] = data_to_buf(TYPE_HASH, (void *)(hash), NULL, 0);
