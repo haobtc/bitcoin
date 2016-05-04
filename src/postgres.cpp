@@ -87,9 +87,14 @@ typedef struct timeval tv_t;
   "insert into blk_tx (blk_id, tx_id, idx) \
     values($1,$2,$3)"
 
+#define DEFAULT_READD_BLK                                                       \
+  " select readd_blk ($1::bytea) "
+
 #define DEFAULT_SAVE_TX                                                        \
   "insert into tx (hash, version, lock_time, coinbase, tx_size, recv_time, ip) \
     values($1::bytea,$2,$3,$4::boolean,$5,$6,$7)  RETURNING id"
+
+#define DEFAULT_READD_TX "select readd_tx($1);"
 
 #define DEFAULT_SAVE_UTX "INSERT INTO utx (id) values ($1);"
 
@@ -628,6 +633,37 @@ static int pg_add_blk_statics(int blkid) {
   return 0;
 }
 
+static int pg_readd_blk(unsigned char *hash)
+{
+  PGresult *res;
+  ExecStatusType rescode;
+  int i = 0;
+  int n = 0;
+  int id = 0;
+  const char *paramvalues[1];
+
+  /* PG does a fine job with timestamps so we won't bother. */
+
+  paramvalues[i++] = data_to_buf(TYPE_BYTEA, (void *)(hash), NULL, 0);
+
+  res = PQexecParams((PGconn *)dbSrv.db_conn, DEFAULT_SAVE_BLK, i, NULL,
+                     paramvalues, NULL, NULL, PQ_WRITE);
+
+  free((char *)paramvalues[i]);
+
+  rescode = PQresultStatus(res);
+  if (!PGOK(rescode)) {
+    LogPrint("dblayer", "pg_readd_blk failed: %s",
+             PQerrorMessage((const PGconn *)dbSrv.db_conn));
+    PQclear(res);
+    return -1;
+  }
+  id = atoi(PQgetvalue(res, 0, 0));
+  PQclear(res);
+
+  return id;
+}
+ 
 static int pg_save_blk(unsigned char *hash, int height, int version,
                        unsigned char *prev_hash, unsigned char *mrkl_root,
                        long long time, int bits, unsigned int nonce, int blk_size,
@@ -642,7 +678,7 @@ static int pg_save_blk(unsigned char *hash, int height, int version,
   // check if block in database
   if (pg_query_blk(hash) > 0) {
     LogPrint("dblayer", "pg_save_blk : block %d exists in database.\n", height);
-    return -1;
+    return pg_readd_blk(hash);
   }
 
   /* PG does a fine job with timestamps so we won't bother. */
@@ -751,6 +787,35 @@ int pg_save_tx(unsigned char *hash, int version, int lock_time, bool coinbase,
 
   return id;
 }
+
+int pg_readd_tx(int txid) {
+  PGresult *res;
+  ExecStatusType rescode;
+  int i = 0;
+  const char *paramvalues[1];
+
+  /* PG does a fine job with timestamps so we won't bother. */
+
+  paramvalues[i++] = data_to_buf(TYPE_INT, (void *)(&txid), NULL, 0);
+
+  res = PQexecParams((PGconn *)dbSrv.db_conn, DEFAULT_READD_TX, i, NULL,
+                     paramvalues, NULL, NULL, PQ_WRITE);
+
+  free((char *)paramvalues[0]);
+
+  rescode = PQresultStatus(res);
+  if (!PGOK(rescode)) {
+    LogPrint("dblayer", "pg_readd_tx failed: %s",
+             PQerrorMessage((const PGconn *)dbSrv.db_conn));
+    PQclear(res);
+    return -1;
+  }
+
+  PQclear(res);
+
+  return 0;
+}
+ 
 
 int pg_save_utx(int txid) {
   PGresult *res;
@@ -1067,6 +1132,7 @@ struct SERVER_DB_OPS postgresql_db_ops = {
   .add_tx_statics = pg_add_tx_statics,
   .save_blk_tx = pg_save_blk_tx,
   .save_tx = pg_save_tx,
+  .readd_tx = pg_readd_tx,
   .save_utx = pg_save_utx,
   .save_txin = pg_save_txin,
   .save_txout = pg_save_txout,
