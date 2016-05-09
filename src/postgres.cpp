@@ -619,7 +619,7 @@ static int pg_readd_blk(unsigned char *hash)
 
   paramvalues[0] = data_to_buf(TYPE_BYTEA, (void *)(hash), NULL, 0);
 
-  res = PQexecParams((PGconn *)dbSrv.db_conn, DEFAULT_SAVE_BLK, 1, NULL,
+  res = PQexecParams((PGconn *)dbSrv.db_conn, DEFAULT_READD_BLK, 1, NULL,
                      paramvalues, NULL, NULL, PQ_WRITE);
 
   free((char *)paramvalues[0]);
@@ -651,7 +651,8 @@ static int pg_save_blk(unsigned char *hash, int height, int version,
   // check if block in database
   if (pg_query_blk(hash) > 0) {
     LogPrint("dblayer", "pg_save_blk : block %d exists in database.\n", height);
-    return pg_readd_blk(hash);
+    pg_readd_blk(hash);
+    return -1;
   }
 
   /* PG does a fine job with timestamps so we won't bother. */
