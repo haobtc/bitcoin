@@ -1635,6 +1635,7 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
         {
             CValidationState valState;
             bool fMissingInputs;
+            LogPrintf("Start restore mempool transactions\n");
             BOOST_FOREACH(CTxMemPoolEntry& mempoolEntry, mempoolEntries)
             {
                 AcceptToMemoryPool(mempool, valState, mempoolEntry.GetTx(), false,
