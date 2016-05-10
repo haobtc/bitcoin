@@ -1009,6 +1009,7 @@ static int pg_delete_all_utx() {
         return 0;    
       }
       
+      LogPrint("dblayer", "Start delete utx\n");
       PQclear(res); 
       res = PQexec((PGconn *)dbSrv.db_conn, DEFAULT_DELETE_SOME_UTX);
       rescode = PQresultStatus(res);
@@ -1023,6 +1024,8 @@ static int pg_delete_all_utx() {
       PQclear(res);
       pg_commit();
   }
+
+  LogPrint("dblayer", "Delete all utx finished.\n");
 
 }
 
