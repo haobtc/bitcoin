@@ -514,7 +514,7 @@ static int pg_query_blk(unsigned char *hash) {
   }
 
   if (PQntuples(res) > 0) {
-    id = atoi(PQgetvalue(res, 0, 0));
+    id = ntohl(*((int *)PQgetvalue(res, 0, 0)));
     }
   else
     id = -1;
