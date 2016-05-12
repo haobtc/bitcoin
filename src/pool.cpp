@@ -270,6 +270,8 @@ int getPoolSupportBip(const unsigned char *coinbase, int coinbaseLen, int versio
             return  bipPrefixes[i].bipType;
         }
     }
+    if (version == 0x20000001)
+        return  BIP_CSV;
     if (version == 0x20000004)
         return  BIP_101_8M;
     if (version == 0x20000008)
