@@ -264,12 +264,6 @@ int getPoolIdByAddr(const char *addr)
 
 int getPoolSupportBip(const unsigned char *coinbase, int coinbaseLen, int version)
 {
-    for (size_t i = 0; i < (sizeof(bipPrefixes) / sizeof(bipPrefixes[0])); ++i) {
-        if (strMatch(bipPrefixes[i].prefix, coinbase, coinbaseLen) != 0) {
-            //LogPrint("dblayer", "mined by pool %s\n", poolPrefixes[i].prefix);
-            return  bipPrefixes[i].bipType;
-        }
-    }
     if (version == 0x20000001)
         return  BIP_CSV;
     if (version == 0x20000004)
@@ -278,5 +272,12 @@ int getPoolSupportBip(const unsigned char *coinbase, int coinbaseLen, int versio
         return  BIP_101_2M;
     if (version == 0x30000000)
         return  BIP_CLASSIC;
+ 
+    for (size_t i = 0; i < (sizeof(bipPrefixes) / sizeof(bipPrefixes[0])); ++i) {
+        if (strMatch(bipPrefixes[i].prefix, coinbase, coinbaseLen) != 0) {
+            //LogPrint("dblayer", "mined by pool %s\n", poolPrefixes[i].prefix);
+            return  bipPrefixes[i].bipType;
+        }
+    }
     return 0;
 }
