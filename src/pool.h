@@ -95,6 +95,7 @@ enum POOL_TYPE {
     POOL_PATELSMINING= 118,   //http://patelsminingpool.com/"
     POOL_HAOBTC= 119,   //http://haobtc.com/"
     POOL_BTCCOM= 120,   //http://pool.btc.com/"
+    POOL_VIABTC= 121,   //http://6Yviabtc.com/"
 };
  
 enum BIP_TYPE {
