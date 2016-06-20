@@ -275,7 +275,7 @@ int getPoolSupportBip(const unsigned char *coinbase, int coinbaseLen, int versio
         return  BIP_101_8M;
     if (version == 0x20000008)
         return  BIP_101_2M;
-    if (version == 0x30000000)
+    if ((version & 0x30000000) == 0x30000000)
         return  BIP_CLASSIC;
  
     for (size_t i = 0; i < (sizeof(bipPrefixes) / sizeof(bipPrefixes[0])); ++i) {
