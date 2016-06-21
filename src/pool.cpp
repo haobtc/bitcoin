@@ -105,6 +105,7 @@ static struct PoolAddr poolAddresses[] = {
     {"1JVHw9iyesn9CSTDgbmKgSyyZoH9CFUFaP", POOL_HAOBTC},
     {"3NA8hsjfdgVkmmVS9moHmkZsVCoLxUkvvv", POOL_BTCCOM},
     {"18cBEMRxXHqzWWCxZNtU91F5sbUNKhL5PX", POOL_VIABTC},
+    {"14KxdJ7DfAPsxCYkpcDTcKotjeProcfRPo", POOL_BRAVO},
     {"1KTNEBhQdj81UhDkJaoe3r8VtAsrnmpmnS", POOL_UNKNOWN},
     {"1Ar2gRkt1u6k4PToeeTKm1KGmtR2GRA1wL", POOL_UNKNOWN},
     {"18UBaMPq6FQfXnKT19rXc8bFFFwQz52Bc1", POOL_UNKNOWN},
