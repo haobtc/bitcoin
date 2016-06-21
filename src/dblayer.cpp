@@ -84,7 +84,7 @@ int  getPoolId(const CTransaction &tx) {
                 CBitcoinAddress addr(dest);
                 id = getPoolIdByAddr(addr.ToString().c_str());
                 if (id != -1)
-                   break;
+                   return id;
                 }
             }
     }
@@ -103,6 +103,7 @@ bool dbOpen() {
     return false;
   }
   LogPrint("dblayer", "\n db open success!\n");
+
   return true;
 }
 
@@ -493,6 +494,3 @@ int dbDeleteAllUtx() {
   return dbSrv.db_ops->delete_all_utx();
 
 }
- 
-
-
