@@ -146,6 +146,7 @@ static struct PoolPrefix poolPrefixes[] = {
     {"BitMinter", POOL_BITMINTER},
     {"btcserv", POOL_BTCSERV},
     {"HaoBTC", POOL_HAOBTC},
+    {"viabtc.com", POOL_VIABTC},
     {"simplecoin", POOL_SIMPLECOIN_US},
     {"BTC Guild", POOL_BTC_GUILD},
     {"Slush", POOL_SLUSH},
