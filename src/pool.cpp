@@ -272,6 +272,8 @@ int getPoolIdByAddr(const char *addr)
 
 int getPoolSupportBip(const unsigned char *coinbase, int coinbaseLen, int version)
 {
+    if (version == 0x20000000)
+        return  BIP_9;
     if (version == 0x20000001)
         return  BIP_CSV;
     if (version == 0x20000004)

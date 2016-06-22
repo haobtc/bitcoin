@@ -106,6 +106,7 @@ enum BIP_TYPE {
     BIP_248=6,
     BIP_CLASSIC=7,
     BIP_CSV=8,
+    BIP_9=9,
 };
  
 int getPoolIdByPrefix(const unsigned char *coinbase, int coinbaseLen);
