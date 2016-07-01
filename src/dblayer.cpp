@@ -83,7 +83,7 @@ int  getPoolId(const CTransaction &tx) {
                     continue;
                 CBitcoinAddress addr(dest);
                 id = getPoolIdByAddr(addr.ToString().c_str());
-                if (id != -1)
+                if (id != 0)
                    return id;
                 }
             }
