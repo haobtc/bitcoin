@@ -60,6 +60,8 @@ QT_TRANSLATE_NOOP("bitcoin-core", ""
 QT_TRANSLATE_NOOP("bitcoin-core", ""
 "Do not keep transactions in the mempool longer than <n> hours (default: %u)"),
 QT_TRANSLATE_NOOP("bitcoin-core", ""
+"Error loading %s: You can't enable HD on a already existing non-HD wallet"),
+QT_TRANSLATE_NOOP("bitcoin-core", ""
 "Error reading %s! All keys read correctly, but transaction data or address "
 "book entries might be missing or incorrect."),
 QT_TRANSLATE_NOOP("bitcoin-core", ""
@@ -114,6 +116,9 @@ QT_TRANSLATE_NOOP("bitcoin-core", ""
 "Please check that your computer's date and time are correct! If your clock "
 "is wrong, %s will not work properly."),
 QT_TRANSLATE_NOOP("bitcoin-core", ""
+"Please contribute if you find %s useful. Visit %s for further information "
+"about the software."),
+QT_TRANSLATE_NOOP("bitcoin-core", ""
 "Prune configured below the minimum of %d MiB.  Please use a higher number."),
 QT_TRANSLATE_NOOP("bitcoin-core", ""
 "Prune: last wallet synchronisation goes beyond pruned data. You need to -"
@@ -140,8 +145,6 @@ QT_TRANSLATE_NOOP("bitcoin-core", ""
 QT_TRANSLATE_NOOP("bitcoin-core", ""
 "Support filtering of blocks and transaction with bloom filters (default: %u)"),
 QT_TRANSLATE_NOOP("bitcoin-core", ""
-"Tell other nodes to filter invs to us by our mempool min fee (default: %u)"),
-QT_TRANSLATE_NOOP("bitcoin-core", ""
 "The block database contains a block which appears to be from the future. "
 "This may be due to your computer's date and time being set incorrectly. Only "
 "rebuild the block database if you are sure that your computer's date and "
@@ -162,6 +165,9 @@ QT_TRANSLATE_NOOP("bitcoin-core", ""
 "Tries to keep outbound traffic under the given target (in MiB per 24h), 0 = "
 "no limit (default: %d)"),
 QT_TRANSLATE_NOOP("bitcoin-core", ""
+"Unable to rewind the database to a pre-fork state. You will need to "
+"redownload the blockchain"),
+QT_TRANSLATE_NOOP("bitcoin-core", ""
 "Unsupported argument -socks found. Setting SOCKS version isn't possible "
 "anymore, only SOCKS5 proxies are supported."),
 QT_TRANSLATE_NOOP("bitcoin-core", ""
@@ -169,6 +175,9 @@ QT_TRANSLATE_NOOP("bitcoin-core", ""
 "or -whitelistforcerelay."),
 QT_TRANSLATE_NOOP("bitcoin-core", ""
 "Use UPnP to map the listening port (default: 1 when listening and no -proxy)"),
+QT_TRANSLATE_NOOP("bitcoin-core", ""
+"Use hierarchical deterministic key generation (HD) after BIP32. Only has "
+"effect during wallet creation/first start"),
 QT_TRANSLATE_NOOP("bitcoin-core", ""
 "Use separate SOCKS5 proxy to reach peers via Tor hidden services (default: "
 "%s)"),
@@ -245,6 +254,7 @@ QT_TRANSLATE_NOOP("bitcoin-core", "Error initializing wallet database environmen
 QT_TRANSLATE_NOOP("bitcoin-core", "Error loading %s"),
 QT_TRANSLATE_NOOP("bitcoin-core", "Error loading %s: Wallet corrupted"),
 QT_TRANSLATE_NOOP("bitcoin-core", "Error loading %s: Wallet requires newer version of %s"),
+QT_TRANSLATE_NOOP("bitcoin-core", "Error loading %s: You can't disable HD on a already existing HD wallet"),
 QT_TRANSLATE_NOOP("bitcoin-core", "Error loading block database"),
 QT_TRANSLATE_NOOP("bitcoin-core", "Error opening block database"),
 QT_TRANSLATE_NOOP("bitcoin-core", "Error reading from database, shutting down."),
@@ -301,11 +311,13 @@ QT_TRANSLATE_NOOP("bitcoin-core", "Relay and mine data carrier transactions (def
 QT_TRANSLATE_NOOP("bitcoin-core", "Relay non-P2SH multisig (default: %u)"),
 QT_TRANSLATE_NOOP("bitcoin-core", "Rescan the block chain for missing wallet transactions on startup"),
 QT_TRANSLATE_NOOP("bitcoin-core", "Rescanning..."),
+QT_TRANSLATE_NOOP("bitcoin-core", "Rewinding blocks..."),
 QT_TRANSLATE_NOOP("bitcoin-core", "Run in the background as a daemon and accept commands"),
 QT_TRANSLATE_NOOP("bitcoin-core", "Send trace/debug info to console instead of debug.log file"),
 QT_TRANSLATE_NOOP("bitcoin-core", "Send transactions as zero-fee transactions if possible (default: %u)"),
 QT_TRANSLATE_NOOP("bitcoin-core", "Set database cache size in megabytes (%d to %d, default: %d)"),
 QT_TRANSLATE_NOOP("bitcoin-core", "Set key pool size to <n> (default: %u)"),
+QT_TRANSLATE_NOOP("bitcoin-core", "Set maximum block cost (default: %d)"),
 QT_TRANSLATE_NOOP("bitcoin-core", "Set maximum block size in bytes (default: %d)"),
 QT_TRANSLATE_NOOP("bitcoin-core", "Set minimum block size in bytes (default: %u)"),
 QT_TRANSLATE_NOOP("bitcoin-core", "Set the number of threads to service RPC calls (default: %d)"),
@@ -319,6 +331,7 @@ QT_TRANSLATE_NOOP("bitcoin-core", "Specify pid file (default: %s)"),
 QT_TRANSLATE_NOOP("bitcoin-core", "Specify wallet file (within data directory)"),
 QT_TRANSLATE_NOOP("bitcoin-core", "Specify your own public address"),
 QT_TRANSLATE_NOOP("bitcoin-core", "Spend unconfirmed change when sending transactions (default: %u)"),
+QT_TRANSLATE_NOOP("bitcoin-core", "The source code is available from %s."),
 QT_TRANSLATE_NOOP("bitcoin-core", "The transaction amount is too small to pay the fee"),
 QT_TRANSLATE_NOOP("bitcoin-core", "This is experimental software."),
 QT_TRANSLATE_NOOP("bitcoin-core", "Threshold for disconnecting misbehaving peers (default: %u)"),

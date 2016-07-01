@@ -1,49 +1,75 @@
-<TS language="bg_BG" version="2.1">
+<TS language="it_IT" version="2.1">
 <context>
     <name>AddressBookPage</name>
     <message>
         <source>Right-click to edit address or label</source>
-        <translation>Клик с десен бутон на мишката за промяна на адрес или етикет</translation>
+        <translation>Click destro per modificare indirizzo o etichetta</translation>
     </message>
     <message>
         <source>Create a new address</source>
-        <translation>Създай нов адрес</translation>
+        <translation>Crea un nuovo indirizzo</translation>
     </message>
     <message>
         <source>&amp;New</source>
-        <translation>Нов</translation>
+        <translation>nuovo</translation>
+    </message>
+    <message>
+        <source>Copy the currently selected address to the system clipboard</source>
+        <translation>copia l'indirizzo selezionato correntemente nella clipboard di sistema</translation>
     </message>
     <message>
         <source>&amp;Copy</source>
-        <translation>Копирай</translation>
+        <translation>copia</translation>
     </message>
     <message>
         <source>C&amp;lose</source>
-        <translation>Затвори</translation>
+        <translation>chiudi </translation>
     </message>
-    </context>
-<context>
-    <name>AddressTableModel</name>
-    </context>
+    <message>
+        <source>Delete the currently selected address from the list</source>
+        <translation>Cancella l'indirizzo attualmente selezionato dalla lista.</translation>
+    </message>
+    <message>
+        <source>Export the data in the current tab to a file</source>
+        <translation>Esportare i dati nella scheda corrente in un file</translation>
+    </message>
+    <message>
+        <source>&amp;Export</source>
+        <translation>Esporta</translation>
+    </message>
+    <message>
+        <source>&amp;Delete</source>
+        <translation>Cancella</translation>
+    </message>
+</context>
 <context>
     <name>AskPassphraseDialog</name>
-    </context>
+    <message>
+        <source>Enter passphrase</source>
+        <translation>Invia passphrase</translation>
+    </message>
+    <message>
+        <source>New passphrase</source>
+        <translation>Nuova passphrase</translation>
+    </message>
+    <message>
+        <source>Repeat new passphrase</source>
+        <translation>Ripeti nuova passphrase</translation>
+    </message>
+</context>
 <context>
     <name>BanTableModel</name>
-    </context>
+    <message>
+        <source>Banned Until</source>
+        <translation>bannato fino </translation>
+    </message>
+</context>
 <context>
     <name>BitcoinGUI</name>
     <message>
-        <source>Bitcoin Core</source>
-        <translation>Биткойн ядро</translation>
+        <source>&amp;Transactions</source>
+        <translation>Transazioni</translation>
     </message>
-    <message>
-        <source>&amp;About Bitcoin Core</source>
-        <translation>За Биткойн ядрото</translation>
-    </message>
-    </context>
-<context>
-    <name>ClientModel</name>
     </context>
 <context>
     <name>CoinControlDialog</name>
@@ -56,21 +82,9 @@
     </context>
 <context>
     <name>HelpMessageDialog</name>
-    <message>
-        <source>Bitcoin Core</source>
-        <translation>Биткойн ядро</translation>
-    </message>
-    <message>
-        <source>About Bitcoin Core</source>
-        <translation>За Биткойн ядрото</translation>
-    </message>
     </context>
 <context>
     <name>Intro</name>
-    <message>
-        <source>Bitcoin Core</source>
-        <translation>Биткойн ядро</translation>
-    </message>
     </context>
 <context>
     <name>OpenURIDialog</name>
@@ -82,16 +96,10 @@
     <name>OverviewPage</name>
     </context>
 <context>
-    <name>PaymentServer</name>
-    </context>
-<context>
     <name>PeerTableModel</name>
     </context>
 <context>
     <name>QObject</name>
-    </context>
-<context>
-    <name>QRImageWidget</name>
     </context>
 <context>
     <name>RPCConsole</name>
@@ -101,9 +109,6 @@
     </context>
 <context>
     <name>ReceiveRequestDialog</name>
-    </context>
-<context>
-    <name>RecentRequestsTableModel</name>
     </context>
 <context>
     <name>SendCoinsDialog</name>
@@ -119,37 +124,15 @@
     </context>
 <context>
     <name>SplashScreen</name>
-    <message>
-        <source>Bitcoin Core</source>
-        <translation>Биткойн ядро</translation>
-    </message>
     </context>
 <context>
     <name>TrafficGraphWidget</name>
     </context>
 <context>
-    <name>TransactionDesc</name>
-    </context>
-<context>
     <name>TransactionDescDialog</name>
     </context>
 <context>
-    <name>TransactionTableModel</name>
-    </context>
-<context>
-    <name>TransactionView</name>
-    </context>
-<context>
     <name>UnitDisplayStatusBarControl</name>
-    </context>
-<context>
-    <name>WalletFrame</name>
-    </context>
-<context>
-    <name>WalletModel</name>
-    </context>
-<context>
-    <name>WalletView</name>
     </context>
 <context>
     <name>bitcoin-core</name>
