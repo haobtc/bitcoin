@@ -31,7 +31,7 @@ libraries such as Qt are no longer being tested on XP.
 
 We do not have time nor resources to provide support for an OS that is
 end-of-life. From 0.13.0 on, Windows XP is no longer supported. Users are
-suggested to upgrade to a newer verion of Windows, or install an alternative OS
+suggested to upgrade to a newer version of Windows, or install an alternative OS
 that is supported.
 
 No attempt is made to prevent installing or running the software on Windows XP,
@@ -40,6 +40,14 @@ report issues about Windows XP to the issue tracker.
 
 Notable changes
 ===============
+
+Low-level RPC changes
+----------------------
+
+- `importprunedfunds` only accepts two required arguments. Some versions accept
+  an optional third arg, which was always ignored. Make sure to never pass more
+  than two arguments.
+
 
 0.14.0 Change log
 =================
