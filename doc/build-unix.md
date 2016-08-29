@@ -268,8 +268,6 @@ A list of additional configure flags can be displayed with:
     ./configure --help
 
 
-<<<<<<< HEAD
-=======
 Setup and Build Example: Arch Linux
 -----------------------------------
 This example lists the steps necessary to setup and build a command line only, non-wallet distribution of the latest changes on Arch Linux:
@@ -288,7 +286,6 @@ or building and depending on a local version of Berkeley DB 4.8. The readily ava
 As mentioned above, when maintaining portability of the wallet between the standard Bitcoin Core distributions and independently built
 node software is desired, Berkeley DB 4.8 must be used.
 
->>>>>>> v0.13.0
 
 ARM Cross-compilation
 -------------------
@@ -309,8 +306,4 @@ To build executables for ARM:
     make
 
 
-<<<<<<< HEAD
 For further documentation on the depends system see [README.md](../depends/README.md) in the depends directory.
-=======
-For further documentation on the depends system see [README.md](../depends/README.md) in the depends directory.
->>>>>>> v0.13.0

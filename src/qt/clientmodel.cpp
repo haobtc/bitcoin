@@ -189,11 +189,6 @@ QString ClientModel::dataDir() const
     return QString::fromStdString(GetDataDir().string());
 }
 
-QString ClientModel::dataDir() const
-{
-    return QString::fromStdString(GetDataDir().string());
-}
-
 void ClientModel::updateBanlist()
 {
     banTableModel->refresh();

@@ -428,20 +428,6 @@ git merge commit are mentioned.
 
 ### P2P protocol and network code
 
-<<<<<<< HEAD
-The p2p alert system has been removed in #7692 and the 'alert' message is no longer supported.
-
-
-Fee filtering of invs (BIP 133)
-------------------------------------
-
-The optional new p2p message "feefilter" is implemented and the protocol
-version is bumped to 70013. Upon receiving a feefilter message from a peer,
-a node will not send invs for any transactions which do not meet the filter
-feerate. [BIP 133](https://github.com/bitcoin/bips/blob/master/bip-0133.mediawiki)
-
-### Validation
-=======
 - #6589 `dc0305d` Log bytes recv/sent per command (jonasschnelli)
 - #7164 `3b43cad` Do not download transactions during initial blockchain sync (ptschip)
 - #7458 `898fedf` peers.dat, banlist.dat recreated when missing (kirkalx)
@@ -486,7 +472,6 @@ feerate. [BIP 133](https://github.com/bitcoin/bips/blob/master/bip-0133.mediawik
 - #7180 `16ccb74` Account for `sendheaders` `verack` messages (laanwj)
 - #8102 `425278d` Bugfix: use global ::fRelayTxes instead of CNode in version send (sipa)
 - #8408 `b7e2011` Prevent fingerprinting, disk-DoS with compact blocks (sdaftuar)
->>>>>>> v0.13.0
 
 ### Build system
 

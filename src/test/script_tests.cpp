@@ -323,12 +323,6 @@ public:
         return *this;
     }
 
-    TestBuilder& ScriptError(ScriptError_t err)
-    {
-        scriptError = err;
-        return *this;
-    }
-
     TestBuilder& Add(const CScript& script)
     {
         DoPush();
@@ -451,8 +445,6 @@ public:
         array.push_back(FormatScriptFlags(flags));
         array.push_back(FormatScriptError((ScriptError_t)scriptError));
         array.push_back(comment);
-        if (scriptError != -1)
-            array.push_back(FormatScriptError((ScriptError_t)scriptError));
         return array;
     }
 
