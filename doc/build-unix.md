@@ -124,6 +124,24 @@ libqrencode (optional) can be installed with:
 Once these are installed, they will be found by configure and a bitcoin-qt executable will be
 built by default.
 
+Dependency Build Instructions: Fedora
+-------------------------------------
+Build requirements:
+
+    sudo dnf install gcc-c++ libtool make autoconf automake openssl-devel libevent-devel boost-devel libdb4-devel libdb4-cxx-devel
+
+Optional:
+
+    sudo dnf install miniupnpc-devel
+
+To build with Qt 5 (recommended) you need the following:
+
+    sudo dnf install qt5-qttools-devel qt5-qtbase-devel protobuf-devel
+
+libqrencode (optional) can be installed with:
+
+    sudo dnf install qrencode-devel
+
 Notes
 -----
 The release is built with GCC and then "strip bitcoind" to strip the debug
@@ -250,6 +268,27 @@ A list of additional configure flags can be displayed with:
     ./configure --help
 
 
+<<<<<<< HEAD
+=======
+Setup and Build Example: Arch Linux
+-----------------------------------
+This example lists the steps necessary to setup and build a command line only, non-wallet distribution of the latest changes on Arch Linux:
+
+    pacman -S git base-devel boost libevent python
+    git clone https://github.com/bitcoin/bitcoin.git
+    cd bitcoin/
+    ./autogen.sh
+    ./configure --disable-wallet --without-gui --without-miniupnpc
+    make check
+
+Note:
+Enabling wallet support requires either compiling against a Berkeley DB newer than 4.8 (package `db`) using `--with-incompatible-bdb`,
+or building and depending on a local version of Berkeley DB 4.8. The readily available Arch Linux packages are currently built using
+`--with-incompatible-bdb` according to the [PKGBUILD](https://projects.archlinux.org/svntogit/community.git/tree/bitcoin/trunk/PKGBUILD).
+As mentioned above, when maintaining portability of the wallet between the standard Bitcoin Core distributions and independently built
+node software is desired, Berkeley DB 4.8 must be used.
+
+>>>>>>> v0.13.0
 
 ARM Cross-compilation
 -------------------
@@ -270,4 +309,8 @@ To build executables for ARM:
     make
 
 
+<<<<<<< HEAD
 For further documentation on the depends system see [README.md](../depends/README.md) in the depends directory.
+=======
+For further documentation on the depends system see [README.md](../depends/README.md) in the depends directory.
+>>>>>>> v0.13.0

@@ -1,8 +1,15 @@
+<<<<<<< HEAD
 #!/usr/bin/env python2
 # Copyright (c) 2016 The Bitcoin Core developers
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 #
+=======
+#!/usr/bin/env python3
+# Copyright (c) 2016 The Bitcoin Core developers
+# Distributed under the MIT software license, see the accompanying
+# file COPYING or http://www.opensource.org/licenses/mit-license.php.
+>>>>>>> v0.13.0
 
 from test_framework.mininode import *
 from test_framework.test_framework import BitcoinTestFramework
@@ -60,8 +67,15 @@ class TestNode(NodeConnCB):
 
 
 class VersionBitsWarningTest(BitcoinTestFramework):
+<<<<<<< HEAD
     def setup_chain(self):
         initialize_chain_clean(self.options.tmpdir, 1)
+=======
+    def __init__(self):
+        super().__init__()
+        self.setup_clean_chain = True
+        self.num_nodes = 1
+>>>>>>> v0.13.0
 
     def setup_network(self):
         self.nodes = []
@@ -82,7 +96,11 @@ class VersionBitsWarningTest(BitcoinTestFramework):
         block_time = self.nodes[0].getblockheader(tip)["time"]+1
         tip = int(tip, 16)
 
+<<<<<<< HEAD
         for i in xrange(numblocks):
+=======
+        for i in range(numblocks):
+>>>>>>> v0.13.0
             block = create_block(tip, create_coinbase(height+1), block_time)
             block.nVersion = nVersionToUse
             block.solve()
