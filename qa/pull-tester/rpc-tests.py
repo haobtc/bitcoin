@@ -49,15 +49,6 @@ if 'ENABLE_UTILS' not in vars():
     ENABLE_UTILS=0
 if 'ENABLE_ZMQ' not in vars():
     ENABLE_ZMQ=0
-    
-# python-zmq may not be installed. Handle this gracefully and with some helpful info
-if ENABLE_ZMQ:
-    try:
-        import zmq
-    except ImportError:
-        print("WARNING: \"import zmq\" failed. Setting ENABLE_ZMQ=0. " \
-            "To run zmq tests, see dependency info in /qa/README.md.")
-        ENABLE_ZMQ=0
 
 ENABLE_COVERAGE=0
 
@@ -110,12 +101,9 @@ if ENABLE_ZMQ:
 
 #Tests
 testScripts = [
-<<<<<<< HEAD
-=======
     # longest test should go first, to favor running tests in parallel
     'p2p-fullblocktest.py',
     'walletbackup.py',
->>>>>>> v0.13.0
     'bip68-112-113-p2p.py',
     'wallet.py',
     'wallet-hd.py',
@@ -149,14 +137,10 @@ testScripts = [
     'invalidtxrequest.py',
     'abandonconflict.py',
     'p2p-versionbits-warning.py',
-<<<<<<< HEAD
-    'importprunedfunds.py',
-=======
     'p2p-segwit.py',
     'segwit.py',
     'importprunedfunds.py',
     'signmessages.py',
->>>>>>> v0.13.0
 ]
 if ENABLE_ZMQ:
     testScripts.append('zmq_test.py')

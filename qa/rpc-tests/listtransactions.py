@@ -9,18 +9,10 @@ from test_framework.test_framework import BitcoinTestFramework
 from test_framework.util import *
 from test_framework.mininode import CTransaction, COIN
 from io import BytesIO
-<<<<<<< HEAD
-import binascii
-
-def txFromHex(hexstring):
-    tx = CTransaction()
-    f = BytesIO(binascii.unhexlify(hexstring))
-=======
 
 def txFromHex(hexstring):
     tx = CTransaction()
     f = BytesIO(hex_str_to_bytes(hexstring))
->>>>>>> v0.13.0
     tx.deserialize(f)
     return tx
 
@@ -183,11 +175,7 @@ class ListTransactionsTest(BitcoinTestFramework):
         # Replace tx3, and check that tx4 becomes unknown
         tx3_b = tx3_modified
         tx3_b.vout[0].nValue -= int(Decimal("0.004") * COIN) # bump the fee
-<<<<<<< HEAD
-        tx3_b = binascii.hexlify(tx3_b.serialize()).decode('utf-8')
-=======
         tx3_b = bytes_to_hex_str(tx3_b.serialize())
->>>>>>> v0.13.0
         tx3_b_signed = self.nodes[0].signrawtransaction(tx3_b)['hex']
         txid_3b = self.nodes[0].sendrawtransaction(tx3_b_signed, True)
         assert(is_opt_in(self.nodes[0], txid_3b))

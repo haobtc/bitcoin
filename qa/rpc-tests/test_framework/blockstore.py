@@ -5,13 +5,8 @@
 #
 
 from .mininode import *
-<<<<<<< HEAD
-import dbm
-from io import BytesIO
-=======
 from io import BytesIO
 import dbm.ndbm
->>>>>>> v0.13.0
 
 class BlockStore(object):
     def __init__(self, datadir):
@@ -32,12 +27,6 @@ class BlockStore(object):
             value = self.blockDB[repr(blockhash)]
         except KeyError:
             return None
-<<<<<<< HEAD
-        f = BytesIO(serialized_block)
-        ret = CBlock()
-        ret.deserialize(f)
-        ret.calc_sha256()
-=======
         return value
 
     # lookup an entry and return it as a CBlock
@@ -49,7 +38,6 @@ class BlockStore(object):
             ret = CBlock()
             ret.deserialize(f)
             ret.calc_sha256()
->>>>>>> v0.13.0
         return ret
 
     def get_header(self, blockhash):
@@ -144,12 +132,6 @@ class TxStore(object):
             value = self.txDB[repr(txhash)]
         except KeyError:
             return None
-<<<<<<< HEAD
-        f = BytesIO(serialized_tx)
-        ret = CTransaction()
-        ret.deserialize(f)
-        ret.calc_sha256()
-=======
         return value
 
     def get_transaction(self, txhash):
@@ -160,7 +142,6 @@ class TxStore(object):
             ret = CTransaction()
             ret.deserialize(f)
             ret.calc_sha256()
->>>>>>> v0.13.0
         return ret
 
     def add_transaction(self, tx):

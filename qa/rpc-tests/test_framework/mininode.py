@@ -28,10 +28,7 @@ import asyncore
 import time
 import sys
 import random
-<<<<<<< HEAD
-=======
 from .util import hex_str_to_bytes, bytes_to_hex_str
->>>>>>> v0.13.0
 from io import BytesIO
 from codecs import encode
 import hashlib
@@ -47,16 +44,12 @@ MY_SUBVERSION = b"/python-mininode-tester:0.0.3/"
 MAX_INV_SZ = 50000
 MAX_BLOCK_SIZE = 1000000
 
-<<<<<<< HEAD
-COIN = 100000000L # 1 btc in satoshis
-=======
 COIN = 100000000 # 1 btc in satoshis
 
 NODE_NETWORK = (1 << 0)
 NODE_GETUTXO = (1 << 1)
 NODE_BLOOM = (1 << 2)
 NODE_WITNESS = (1 << 3)
->>>>>>> v0.13.0
 
 # Keep our own socket map for asyncore, so that we can track disconnects
 # ourselves (to workaround an issue with closing an asyncore socket when 
@@ -97,16 +90,9 @@ def ser_string(s):
         return struct.pack("B", len(s)) + s
     elif len(s) < 0x10000:
         return struct.pack("<BH", 253, len(s)) + s
-<<<<<<< HEAD
-    elif len(s) < 0x100000000L:
-        return struct.pack("<BI", 254, len(s)) + s
-    return struct.pack("<BQ", 255, len(s)) + s
-
-=======
     elif len(s) < 0x100000000:
         return struct.pack("<BI", 254, len(s)) + s
     return struct.pack("<BQ", 255, len(s)) + s
->>>>>>> v0.13.0
 
 def deser_uint256(f):
     r = 0
@@ -163,11 +149,7 @@ def ser_vector(l, ser_function_name=None):
         r = struct.pack("B", len(l))
     elif len(l) < 0x10000:
         r = struct.pack("<BH", 253, len(l))
-<<<<<<< HEAD
-    elif len(l) < 0x100000000L:
-=======
     elif len(l) < 0x100000000:
->>>>>>> v0.13.0
         r = struct.pack("<BI", 254, len(l))
     else:
         r = struct.pack("<BQ", 255, len(l))
@@ -200,11 +182,7 @@ def ser_uint256_vector(l):
         r = struct.pack("B", len(l))
     elif len(l) < 0x10000:
         r = struct.pack("<BH", 253, len(l))
-<<<<<<< HEAD
-    elif len(l) < 0x100000000L:
-=======
     elif len(l) < 0x100000000:
->>>>>>> v0.13.0
         r = struct.pack("<BI", 254, len(l))
     else:
         r = struct.pack("<BQ", 255, len(l))
@@ -234,11 +212,7 @@ def ser_string_vector(l):
         r = struct.pack("B", len(l))
     elif len(l) < 0x10000:
         r = struct.pack("<BH", 253, len(l))
-<<<<<<< HEAD
-    elif len(l) < 0x100000000L:
-=======
     elif len(l) < 0x100000000:
->>>>>>> v0.13.0
         r = struct.pack("<BI", 254, len(l))
     else:
         r = struct.pack("<BQ", 255, len(l))
@@ -268,11 +242,7 @@ def ser_int_vector(l):
         r = struct.pack("B", len(l))
     elif len(l) < 0x10000:
         r = struct.pack("<BH", 253, len(l))
-<<<<<<< HEAD
-    elif len(l) < 0x100000000L:
-=======
     elif len(l) < 0x100000000:
->>>>>>> v0.13.0
         r = struct.pack("<BI", 254, len(l))
     else:
         r = struct.pack("<BQ", 255, len(l))
@@ -282,11 +252,7 @@ def ser_int_vector(l):
 
 # Deserialize from a hex string representation (eg from RPC)
 def FromHex(obj, hex_string):
-<<<<<<< HEAD
-    obj.deserialize(BytesIO(binascii.unhexlify(hex_string)))
-=======
     obj.deserialize(BytesIO(hex_str_to_bytes(hex_string)))
->>>>>>> v0.13.0
     return obj
 
 # Convert a binary-serializable object to hex (eg for submission via RPC)
@@ -435,9 +401,6 @@ class CTxOut(object):
     def __repr__(self):
         return "CTxOut(nValue=%i.%08i scriptPubKey=%s)" \
             % (self.nValue // COIN, self.nValue % COIN,
-<<<<<<< HEAD
-               binascii.hexlify(self.scriptPubKey))
-=======
                bytes_to_hex_str(self.scriptPubKey))
 
 
@@ -499,7 +462,6 @@ class CTxWitness(object):
             if not x.is_null():
                 return False
         return True
->>>>>>> v0.13.0
 
 
 class CTransaction(object):
@@ -590,13 +552,8 @@ class CTransaction(object):
             return uint256_from_str(hash256(self.serialize_with_witness()))
 
         if self.sha256 is None:
-<<<<<<< HEAD
-            self.sha256 = uint256_from_str(hash256(self.serialize()))
-        self.hash = encode(hash256(self.serialize())[::-1], 'hex')
-=======
             self.sha256 = uint256_from_str(hash256(self.serialize_without_witness()))
         self.hash = encode(hash256(self.serialize())[::-1], 'hex_codec').decode('ascii')
->>>>>>> v0.13.0
 
     def is_valid(self):
         self.calc_sha256()
@@ -665,11 +622,7 @@ class CBlockHeader(object):
             r += struct.pack("<I", self.nBits)
             r += struct.pack("<I", self.nNonce)
             self.sha256 = uint256_from_str(hash256(r))
-<<<<<<< HEAD
-            self.hash = encode(hash256(r)[::-1], 'hex')
-=======
             self.hash = encode(hash256(r)[::-1], 'hex_codec').decode('ascii')
->>>>>>> v0.13.0
 
     def rehash(self):
         self.sha256 = None
@@ -1204,17 +1157,10 @@ class msg_reject(object):
     REJECT_MALFORMED = 1
 
     def __init__(self):
-<<<<<<< HEAD
-        self.message = ""
-        self.code = 0
-        self.reason = ""
-        self.data = 0L
-=======
         self.message = b""
         self.code = 0
         self.reason = b""
         self.data = 0
->>>>>>> v0.13.0
 
     def deserialize(self, f):
         self.message = deser_string(f)
@@ -1253,26 +1199,16 @@ def wait_until(predicate, attempts=float('inf'), timeout=float('inf')):
     return False
 
 class msg_feefilter(object):
-<<<<<<< HEAD
-    command = "feefilter"
-
-    def __init__(self, feerate=0L):
-=======
     command = b"feefilter"
 
     def __init__(self, feerate=0):
->>>>>>> v0.13.0
         self.feerate = feerate
 
     def deserialize(self, f):
         self.feerate = struct.unpack("<Q", f.read(8))[0]
 
     def serialize(self):
-<<<<<<< HEAD
-        r = ""
-=======
         r = b""
->>>>>>> v0.13.0
         r += struct.pack("<Q", self.feerate)
         return r
 
@@ -1358,10 +1294,7 @@ class NodeConnCB(object):
     def on_mempool(self, conn): pass
     def on_pong(self, conn, message): pass
     def on_feefilter(self, conn, message): pass
-<<<<<<< HEAD
-=======
     def on_sendheaders(self, conn, message): pass
->>>>>>> v0.13.0
 
 # More useful callbacks and functions for NodeConnCB's which have a single NodeConn
 class SingleNodeConnCB(NodeConnCB):
@@ -1394,25 +1327,6 @@ class SingleNodeConnCB(NodeConnCB):
 # This class provides an interface for a p2p connection to a specified node
 class NodeConn(asyncore.dispatcher):
     messagemap = {
-<<<<<<< HEAD
-        "version": msg_version,
-        "verack": msg_verack,
-        "addr": msg_addr,
-        "alert": msg_alert,
-        "inv": msg_inv,
-        "getdata": msg_getdata,
-        "getblocks": msg_getblocks,
-        "tx": msg_tx,
-        "block": msg_block,
-        "getaddr": msg_getaddr,
-        "ping": msg_ping,
-        "pong": msg_pong,
-        "headers": msg_headers,
-        "getheaders": msg_getheaders,
-        "reject": msg_reject,
-        "mempool": msg_mempool,
-        "feefilter": msg_feefilter
-=======
         b"version": msg_version,
         b"verack": msg_verack,
         b"addr": msg_addr,
@@ -1431,7 +1345,6 @@ class NodeConn(asyncore.dispatcher):
         b"mempool": msg_mempool,
         b"feefilter": msg_feefilter,
         b"sendheaders": msg_sendheaders
->>>>>>> v0.13.0
     }
     MAGIC_BYTES = {
         "mainnet": b"\xf9\xbe\xb4\xd9",   # mainnet
@@ -1528,11 +1441,7 @@ class NodeConn(asyncore.dispatcher):
                 if self.ver_recv < 209:
                     if len(self.recvbuf) < 4 + 12 + 4:
                         return
-<<<<<<< HEAD
-                    command = self.recvbuf[4:4+12].split("\x00", 1)[0]
-=======
                     command = self.recvbuf[4:4+12].split(b"\x00", 1)[0]
->>>>>>> v0.13.0
                     msglen = struct.unpack("<i", self.recvbuf[4+12:4+12+4])[0]
                     checksum = None
                     if len(self.recvbuf) < 4 + 12 + 4 + msglen:
@@ -1542,11 +1451,7 @@ class NodeConn(asyncore.dispatcher):
                 else:
                     if len(self.recvbuf) < 4 + 12 + 4 + 4:
                         return
-<<<<<<< HEAD
-                    command = self.recvbuf[4:4+12].split("\x00", 1)[0]
-=======
                     command = self.recvbuf[4:4+12].split(b"\x00", 1)[0]
->>>>>>> v0.13.0
                     msglen = struct.unpack("<i", self.recvbuf[4+12:4+12+4])[0]
                     checksum = self.recvbuf[4+12+4:4+12+4+4]
                     if len(self.recvbuf) < 4 + 12 + 4 + 4 + msglen:
@@ -1566,13 +1471,9 @@ class NodeConn(asyncore.dispatcher):
                     self.show_debug_msg("Unknown command: '" + command + "' " +
                                         repr(msg))
         except Exception as e:
-<<<<<<< HEAD
-            print 'got_data:', repr(e)
-=======
             print('got_data:', repr(e))
             # import  traceback
             # traceback.print_tb(sys.exc_info()[2])
->>>>>>> v0.13.0
 
     def send_message(self, message, pushbuf=False):
         if self.state != "connected" and not pushbuf:

@@ -166,17 +166,12 @@ def initialize_datadir(dirname, n):
         f.write("listenonion=0\n")
     return datadir
 
-<<<<<<< HEAD
-def rpc_url(i, rpchost=None):
-    return "http://rt:rt@%s:%d" % (rpchost or '127.0.0.1', rpc_port(i))
-=======
 def rpc_auth_pair(n):
     return 'rpcuser💻' + str(n), 'rpcpass🔑' + str(n)
 
 def rpc_url(i, rpchost=None):
     rpc_u, rpc_p = rpc_auth_pair(i)
     return "http://%s:%s@%s:%d" % (rpc_u, rpc_p, rpchost or '127.0.0.1', rpc_port(i))
->>>>>>> v0.13.0
 
 def wait_for_bitcoind_start(process, url, i):
     '''
@@ -198,17 +193,10 @@ def wait_for_bitcoind_start(process, url, i):
                 raise # unkown JSON RPC exception
         time.sleep(0.25)
 
-<<<<<<< HEAD
-def initialize_chain(test_dir):
-    """
-    Create (or copy from cache) a 200-block-long chain and
-    4 wallets.
-=======
 def initialize_chain(test_dir, num_nodes):
     """
     Create a cache of a 200-block-long chain (with wallet) for MAX_NODES
     Afterward, create num_nodes copies from the cache
->>>>>>> v0.13.0
     """
 
     assert num_nodes <= MAX_NODES
@@ -233,15 +221,6 @@ def initialize_chain(test_dir, num_nodes):
                 args.append("-connect=127.0.0.1:"+str(p2p_port(0)))
             bitcoind_processes[i] = subprocess.Popen(args)
             if os.getenv("PYTHON_DEBUG", ""):
-<<<<<<< HEAD
-                print "initialize_chain: bitcoind started, waiting for RPC to come up"
-            wait_for_bitcoind_start(bitcoind_processes[i], rpc_url(i), i)
-            if os.getenv("PYTHON_DEBUG", ""):
-                print "initialize_chain: RPC succesfully started"
-
-        rpcs = []
-        for i in range(4):
-=======
                 print("initialize_chain: bitcoind started, waiting for RPC to come up")
             wait_for_bitcoind_start(bitcoind_processes[i], rpc_url(i), i)
             if os.getenv("PYTHON_DEBUG", ""):
@@ -249,7 +228,6 @@ def initialize_chain(test_dir, num_nodes):
 
         rpcs = []
         for i in range(MAX_NODES):
->>>>>>> v0.13.0
             try:
                 rpcs.append(get_rpc_proxy(rpc_url(i), i))
             except:
@@ -330,19 +308,11 @@ def start_node(i, dirname, extra_args=None, rpchost=None, timewait=None, binary=
     if extra_args is not None: args.extend(extra_args)
     bitcoind_processes[i] = subprocess.Popen(args)
     if os.getenv("PYTHON_DEBUG", ""):
-<<<<<<< HEAD
-        print "start_node: bitcoind started, waiting for RPC to come up"
-    url = rpc_url(i, rpchost)
-    wait_for_bitcoind_start(bitcoind_processes[i], url, i)
-    if os.getenv("PYTHON_DEBUG", ""):
-        print "start_node: RPC succesfully started"
-=======
         print("start_node: bitcoind started, waiting for RPC to come up")
     url = rpc_url(i, rpchost)
     wait_for_bitcoind_start(bitcoind_processes[i], url, i)
     if os.getenv("PYTHON_DEBUG", ""):
         print("start_node: RPC succesfully started")
->>>>>>> v0.13.0
     proxy = get_rpc_proxy(url, i, timeout=timewait)
 
     if COVERAGE_DIR:
@@ -354,13 +324,8 @@ def start_nodes(num_nodes, dirname, extra_args=None, rpchost=None, binary=None):
     """
     Start multiple bitcoinds, return RPC connections to them
     """
-<<<<<<< HEAD
-    if extra_args is None: extra_args = [ None for i in range(num_nodes) ]
-    if binary is None: binary = [ None for i in range(num_nodes) ]
-=======
     if extra_args is None: extra_args = [ None for _ in range(num_nodes) ]
     if binary is None: binary = [ None for _ in range(num_nodes) ]
->>>>>>> v0.13.0
     rpcs = []
     try:
         for i in range(num_nodes):

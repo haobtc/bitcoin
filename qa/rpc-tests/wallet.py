@@ -266,17 +266,6 @@ class WalletTest (BitcoinTestFramework):
         except JSONRPCException as e:
             assert("not an integer" in e.error['message'])
 
-<<<<<<< HEAD
-
-        # Mine a block from node0 to an address from node1
-        cbAddr = self.nodes[1].getnewaddress()
-        blkHash = self.nodes[0].generatetoaddress(1, cbAddr)[0]
-        cbTxId = self.nodes[0].getblock(blkHash)['tx'][0]
-        self.sync_all()
-
-        # Check that the txid and balance is found by node1
-        self.nodes[1].gettransaction(cbTxId)
-=======
         # Import address and private key to check correct behavior of spendable unspents
         # 1. Send some coins to generate new UTXO
         address_to_import = self.nodes[2].getnewaddress()
@@ -289,7 +278,6 @@ class WalletTest (BitcoinTestFramework):
 
         # 3. Validate that the imported address is watch-only on node1
         assert(self.nodes[1].validateaddress(address_to_import)["iswatchonly"])
->>>>>>> v0.13.0
 
         # 4. Check that the unspents after import are not spendable
         assert_array_result(self.nodes[1].listunspent(),
@@ -310,22 +298,17 @@ class WalletTest (BitcoinTestFramework):
         blkHash = self.nodes[0].generatetoaddress(1, cbAddr)[0]
         cbTxId = self.nodes[0].getblock(blkHash)['tx'][0]
         self.sync_all()
-<<<<<<< HEAD
-=======
 
         # Check that the txid and balance is found by node1
         self.nodes[1].gettransaction(cbTxId)
 
         # check if wallet or blockchain maintenance changes the balance
         self.sync_all()
->>>>>>> v0.13.0
         blocks = self.nodes[0].generate(2)
         self.sync_all()
         balance_nodes = [self.nodes[i].getbalance() for i in range(3)]
         block_count = self.nodes[0].getblockcount()
 
-<<<<<<< HEAD
-=======
         # Check modes:
         #   - True: unicode escaped as \u....
         #   - False: unicode directly as UTF-8
@@ -340,7 +323,6 @@ class WalletTest (BitcoinTestFramework):
         self.nodes[0].ensure_ascii = True # restore to default
 
         # maintenance tests
->>>>>>> v0.13.0
         maintenance = [
             '-rescan',
             '-reindex',

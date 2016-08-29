@@ -27,11 +27,7 @@ from .util import (
     initialize_chain_clean,
     PortSeed,
 )
-<<<<<<< HEAD
-from .authproxy import AuthServiceProxy, JSONRPCException
-=======
 from .authproxy import JSONRPCException
->>>>>>> v0.13.0
 
 
 class BitcoinTestFramework(object):
@@ -157,14 +153,10 @@ class BitcoinTestFramework(object):
             print("JSONRPC error: "+e.error['message'])
             traceback.print_tb(sys.exc_info()[2])
         except AssertionError as e:
-<<<<<<< HEAD
-            print("Assertion failed: "+ str(e))
-=======
             print("Assertion failed: " + str(e))
             traceback.print_tb(sys.exc_info()[2])
         except KeyError as e:
             print("key not found: "+ str(e))
->>>>>>> v0.13.0
             traceback.print_tb(sys.exc_info()[2])
         except Exception as e:
             print("Unexpected exception caught during testing: " + repr(e))

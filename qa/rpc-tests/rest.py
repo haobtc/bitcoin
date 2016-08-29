@@ -13,22 +13,9 @@ from test_framework.util import *
 from struct import *
 from io import BytesIO
 from codecs import encode
-<<<<<<< HEAD
-import binascii
-
-try:
-    import http.client as httplib
-except ImportError:
-    import httplib
-try:
-    import urllib.parse as urlparse
-except ImportError:
-    import urlparse
-=======
 
 import http.client
 import urllib.parse
->>>>>>> v0.13.0
 
 def deser_uint256(f):
     r = 0
@@ -241,11 +228,7 @@ class RESTTest (BitcoinTestFramework):
         assert_equal(response_hex.status, 200)
         assert_greater_than(int(response_hex.getheader('content-length')), 160)
         response_hex_str = response_hex.read()
-<<<<<<< HEAD
-        assert_equal(encode(response_str, "hex")[0:160], response_hex_str[0:160])
-=======
         assert_equal(encode(response_str, "hex_codec")[0:160], response_hex_str[0:160])
->>>>>>> v0.13.0
 
         # compare with hex block header
         response_header_hex = http_get_call(url.hostname, url.port, '/rest/headers/1/'+bb_hash+self.FORMAT_SEPARATOR+"hex", True)
@@ -253,11 +236,7 @@ class RESTTest (BitcoinTestFramework):
         assert_greater_than(int(response_header_hex.getheader('content-length')), 160)
         response_header_hex_str = response_header_hex.read()
         assert_equal(response_hex_str[0:160], response_header_hex_str[0:160])
-<<<<<<< HEAD
-        assert_equal(encode(response_header_str, "hex")[0:160], response_header_hex_str[0:160])
-=======
         assert_equal(encode(response_header_str, "hex_codec")[0:160], response_header_hex_str[0:160])
->>>>>>> v0.13.0
 
         # check json format
         block_json_string = http_get_call(url.hostname, url.port, '/rest/block/'+bb_hash+self.FORMAT_SEPARATOR+'json')

@@ -64,11 +64,7 @@ class TestManager(NodeConnCB):
                         raise AssertionError("Error, test failed: block %064x requested more than once" % key)
             if total_requests > MAX_REQUESTS:
                 raise AssertionError("Error, too many blocks (%d) requested" % total_requests)
-<<<<<<< HEAD
-            print "Round %d: success (total requests: %d)" % (count, total_requests)
-=======
             print("Round %d: success (total requests: %d)" % (count, total_requests))
->>>>>>> v0.13.0
 
         self.disconnectOkay = True
         self.connection.disconnect_node()
@@ -86,11 +82,7 @@ class MaxBlocksInFlightTest(BitcoinTestFramework):
         self.num_nodes = 1
 
     def setup_network(self):
-<<<<<<< HEAD
-        self.nodes = start_nodes(1, self.options.tmpdir,
-=======
         self.nodes = start_nodes(self.num_nodes, self.options.tmpdir,
->>>>>>> v0.13.0
                                  extra_args=[['-debug', '-whitelist=127.0.0.1']],
                                  binary=[self.options.testbinary])
 

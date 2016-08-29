@@ -11,11 +11,6 @@ Before running the tests, the following must be installed.
 
 Unix
 ----
-<<<<<<< HEAD
-The python-zmq library is required. On Ubuntu or Debian it can be installed via: 
-```
-sudo apt-get install python-zmq
-=======
 The python3-zmq library is required. On Ubuntu or Debian it can be installed via:
 ```
 sudo apt-get install python3-zmq
@@ -25,7 +20,6 @@ OS X
 ------
 ```
 pip3 install pyzmq
->>>>>>> v0.13.0
 ```
 
 Running tests

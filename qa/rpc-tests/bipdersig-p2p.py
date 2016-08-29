@@ -9,10 +9,6 @@ from test_framework.mininode import CTransaction, NetworkThread
 from test_framework.blocktools import create_coinbase, create_block
 from test_framework.comptool import TestInstance, TestManager
 from test_framework.script import CScript
-<<<<<<< HEAD
-from binascii import unhexlify
-=======
->>>>>>> v0.13.0
 from io import BytesIO
 import time
 
@@ -71,11 +67,7 @@ class BIP66Test(ComparisonTestFramework):
         rawtx = node.createrawtransaction(inputs, outputs)
         signresult = node.signrawtransaction(rawtx)
         tx = CTransaction()
-<<<<<<< HEAD
-        f = BytesIO(unhexlify(signresult['hex']))
-=======
         f = BytesIO(hex_str_to_bytes(signresult['hex']))
->>>>>>> v0.13.0
         tx.deserialize(f)
         return tx
 

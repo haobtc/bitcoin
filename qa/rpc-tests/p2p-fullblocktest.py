@@ -301,11 +301,7 @@ class FullBlockTest(ComparisonTestFramework):
         #                      \-> b3 (1) -> b4 (2)
 
         # Test that a block with a lot of checksigs is okay
-<<<<<<< HEAD
-        lots_of_checksigs = CScript([OP_CHECKSIG] * (1000000 // 50 - 1))
-=======
         lots_of_checksigs = CScript([OP_CHECKSIG] * (MAX_BLOCK_SIGOPS - 1))
->>>>>>> v0.13.0
         tip(13)
         block(15, spend=out[5], script=lots_of_checksigs)
         yield accepted()
@@ -313,16 +309,9 @@ class FullBlockTest(ComparisonTestFramework):
 
 
         # Test that a block with too many checksigs is rejected
-<<<<<<< HEAD
-        out6 = get_spendable_output()
-        too_many_checksigs = CScript([OP_CHECKSIG] * (1000000 // 50))
-        block(16, spend=out6, script=too_many_checksigs)
-        yield rejected(RejectResult(16, 'bad-blk-sigops'))
-=======
         too_many_checksigs = CScript([OP_CHECKSIG] * (MAX_BLOCK_SIGOPS))
         block(16, spend=out[6], script=too_many_checksigs)
         yield rejected(RejectResult(16, b'bad-blk-sigops'))
->>>>>>> v0.13.0
 
 
         # Attempt to spend a transaction created on a different fork

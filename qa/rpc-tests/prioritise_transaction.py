@@ -35,11 +35,7 @@ class PrioritiseTransactionTest(BitcoinTestFramework):
 
         # Create 3 batches of transactions at 3 different fee rate levels
         range_size = utxo_count // 3
-<<<<<<< HEAD
-        for i in xrange(3):
-=======
         for i in range(3):
->>>>>>> v0.13.0
             txids.append([])
             start_range = i * range_size
             end_range = start_range + range_size
@@ -50,11 +46,7 @@ class PrioritiseTransactionTest(BitcoinTestFramework):
         # more transactions.
         mempool = self.nodes[0].getrawmempool(True)
         sizes = [0, 0, 0]
-<<<<<<< HEAD
-        for i in xrange(3):
-=======
         for i in range(3):
->>>>>>> v0.13.0
             for j in txids[i]:
                 assert(j in mempool)
                 sizes[i] += mempool[j]['size']
@@ -69,11 +61,7 @@ class PrioritiseTransactionTest(BitcoinTestFramework):
         self.nodes[0].generate(1)
 
         mempool = self.nodes[0].getrawmempool()
-<<<<<<< HEAD
-        print "Assert that prioritised transaction was mined"
-=======
         print("Assert that prioritised transaction was mined")
->>>>>>> v0.13.0
         assert(txids[0][0] not in mempool)
         assert(txids[0][1] in mempool)
 

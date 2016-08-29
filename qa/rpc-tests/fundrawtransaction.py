@@ -78,11 +78,7 @@ class RawTransactionsTest(BitcoinTestFramework):
         rawtxfund = self.nodes[2].fundrawtransaction(rawtx)
         fee = rawtxfund['fee']
         dec_tx  = self.nodes[2].decoderawtransaction(rawtxfund['hex'])
-<<<<<<< HEAD
-        assert(len(dec_tx['vin']) > 0) #test if we have enought inputs
-=======
         assert(len(dec_tx['vin']) > 0) #test that we have enough inputs
->>>>>>> v0.13.0
 
         ##############################
         # simple test with two coins #
@@ -134,18 +130,7 @@ class RawTransactionsTest(BitcoinTestFramework):
         #########################################################################
         # test a fundrawtransaction with a VIN greater than the required amount #
         #########################################################################
-<<<<<<< HEAD
-        utx = False
-        listunspent = self.nodes[2].listunspent()
-        for aUtx in listunspent:
-            if aUtx['amount'] == 5.0:
-                utx = aUtx
-                break
-
-        assert(utx!=False)
-=======
         utx = get_unspent(self.nodes[2].listunspent(), 5)
->>>>>>> v0.13.0
 
         inputs  = [ {'txid' : utx['txid'], 'vout' : utx['vout']}]
         outputs = { self.nodes[0].getnewaddress() : 1.0 }
@@ -166,18 +151,7 @@ class RawTransactionsTest(BitcoinTestFramework):
         #####################################################################
         # test a fundrawtransaction with which will not get a change output #
         #####################################################################
-<<<<<<< HEAD
-        utx = False
-        listunspent = self.nodes[2].listunspent()
-        for aUtx in listunspent:
-            if aUtx['amount'] == 5.0:
-                utx = aUtx
-                break
-
-        assert(utx!=False)
-=======
         utx = get_unspent(self.nodes[2].listunspent(), 5)
->>>>>>> v0.13.0
 
         inputs  = [ {'txid' : utx['txid'], 'vout' : utx['vout']}]
         outputs = { self.nodes[0].getnewaddress() : Decimal(5.0) - fee - feeTolerance }
@@ -259,18 +233,7 @@ class RawTransactionsTest(BitcoinTestFramework):
         #########################################################################
         # test a fundrawtransaction with a VIN smaller than the required amount #
         #########################################################################
-<<<<<<< HEAD
-        utx = False
-        listunspent = self.nodes[2].listunspent()
-        for aUtx in listunspent:
-            if aUtx['amount'] == 1.0:
-                utx = aUtx
-                break
-
-        assert(utx!=False)
-=======
         utx = get_unspent(self.nodes[2].listunspent(), 1)
->>>>>>> v0.13.0
 
         inputs  = [ {'txid' : utx['txid'], 'vout' : utx['vout']}]
         outputs = { self.nodes[0].getnewaddress() : 1.0 }
@@ -305,22 +268,8 @@ class RawTransactionsTest(BitcoinTestFramework):
         ###########################################
         # test a fundrawtransaction with two VINs #
         ###########################################
-<<<<<<< HEAD
-        utx  = False
-        utx2 = False
-        listunspent = self.nodes[2].listunspent()
-        for aUtx in listunspent:
-            if aUtx['amount'] == 1.0:
-                utx = aUtx
-            if aUtx['amount'] == 5.0:
-                utx2 = aUtx
-
-
-        assert(utx!=False)
-=======
         utx = get_unspent(self.nodes[2].listunspent(), 1)
         utx2 = get_unspent(self.nodes[2].listunspent(), 5)
->>>>>>> v0.13.0
 
         inputs  = [ {'txid' : utx['txid'], 'vout' : utx['vout']},{'txid' : utx2['txid'], 'vout' : utx2['vout']} ]
         outputs = { self.nodes[0].getnewaddress() : 6.0 }
@@ -352,22 +301,8 @@ class RawTransactionsTest(BitcoinTestFramework):
         #########################################################
         # test a fundrawtransaction with two VINs and two vOUTs #
         #########################################################
-<<<<<<< HEAD
-        utx  = False
-        utx2 = False
-        listunspent = self.nodes[2].listunspent()
-        for aUtx in listunspent:
-            if aUtx['amount'] == 1.0:
-                utx = aUtx
-            if aUtx['amount'] == 5.0:
-                utx2 = aUtx
-
-
-        assert(utx!=False)
-=======
         utx = get_unspent(self.nodes[2].listunspent(), 1)
         utx2 = get_unspent(self.nodes[2].listunspent(), 5)
->>>>>>> v0.13.0
 
         inputs  = [ {'txid' : utx['txid'], 'vout' : utx['vout']},{'txid' : utx2['txid'], 'vout' : utx2['vout']} ]
         outputs = { self.nodes[0].getnewaddress() : 6.0, self.nodes[0].getnewaddress() : 1.0 }

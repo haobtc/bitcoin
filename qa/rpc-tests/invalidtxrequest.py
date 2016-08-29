@@ -63,13 +63,8 @@ class InvalidTxRequestTest(ComparisonTestFramework):
 
         # b'\x64' is OP_NOTIF
         # Transaction will be rejected with code 16 (REJECT_INVALID)
-<<<<<<< HEAD
-        tx1 = create_transaction(self.block1.vtx[0], 0, chr(100), 50 * COIN - 12000)
-        yield TestInstance([[tx1, RejectResult(16, 'mandatory-script-verify-flag-failed')]])
-=======
         tx1 = create_transaction(self.block1.vtx[0], 0, b'\x64', 50 * COIN - 12000)
         yield TestInstance([[tx1, RejectResult(16, b'mandatory-script-verify-flag-failed')]])
->>>>>>> v0.13.0
 
         # TODO: test further transactions...
 

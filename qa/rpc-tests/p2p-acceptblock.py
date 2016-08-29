@@ -152,11 +152,7 @@ class AcceptBlockTest(BitcoinTestFramework):
         # This should be accepted.
         blocks_h2 = []  # the height 2 blocks on each node's chain
         block_time = int(time.time()) + 1
-<<<<<<< HEAD
-        for i in xrange(2):
-=======
         for i in range(2):
->>>>>>> v0.13.0
             blocks_h2.append(create_block(tips[i], create_coinbase(2), block_time))
             blocks_h2[i].solve()
             block_time += 1

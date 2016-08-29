@@ -36,13 +36,10 @@ addnode connect to generic DNS name
 
 class ProxyTest(BitcoinTestFramework):
     def __init__(self):
-<<<<<<< HEAD
-=======
         super().__init__()
         self.num_nodes = 4
         self.setup_clean_chain = False
 
->>>>>>> v0.13.0
         self.have_ipv6 = test_ipv6_local()
         # Create two proxies on different ports
         # ... one unauthenticated
@@ -63,11 +60,7 @@ class ProxyTest(BitcoinTestFramework):
             self.conf3.unauth = True
             self.conf3.auth = True
         else:
-<<<<<<< HEAD
-            print "Warning: testing without local IPv6 support"
-=======
             print("Warning: testing without local IPv6 support")
->>>>>>> v0.13.0
 
         self.serv1 = Socks5Server(self.conf1)
         self.serv1.start()
@@ -88,11 +81,7 @@ class ProxyTest(BitcoinTestFramework):
             ]
         if self.have_ipv6:
             args[3] = ['-listen', '-debug=net', '-debug=proxy', '-proxy=[%s]:%i' % (self.conf3.addr),'-proxyrandomize=0', '-noonion']
-<<<<<<< HEAD
-        return start_nodes(4, self.options.tmpdir, extra_args=args)
-=======
         return start_nodes(self.num_nodes, self.options.tmpdir, extra_args=args)
->>>>>>> v0.13.0
 
     def node_test(self, node, proxies, auth, test_onion=True):
         rv = []
@@ -116,11 +105,7 @@ class ProxyTest(BitcoinTestFramework):
             assert(isinstance(cmd, Socks5Command))
             # Note: bitcoind's SOCKS5 implementation only sends atyp DOMAINNAME, even if connecting directly to IPv4/IPv6
             assert_equal(cmd.atyp, AddressType.DOMAINNAME)
-<<<<<<< HEAD
-            assert_equal(cmd.addr, "1233:3432:2434:2343:3234:2345:6546:4534")
-=======
             assert_equal(cmd.addr, b"1233:3432:2434:2343:3234:2345:6546:4534")
->>>>>>> v0.13.0
             assert_equal(cmd.port, 5443)
             if not auth:
                 assert_equal(cmd.username, None)
