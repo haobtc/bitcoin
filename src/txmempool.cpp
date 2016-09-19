@@ -536,7 +536,7 @@ void CTxMemPool::removeRecursive(const CTransaction &origTx, std::list<CTransact
         BOOST_FOREACH(txiter it, setAllRemoves) {
             removed.push_back(it->GetTx());
         }
-        RemoveStaged(setAllRemoves, false, fRecursive);
+        RemoveStaged(setAllRemoves, false, true);
     }
 }
 
@@ -615,7 +615,7 @@ void CTxMemPool::removeForBlock(const std::vector<CTransaction>& vtx, unsigned i
         if (it != mapTx.end()) {
             setEntries stage;
             stage.insert(it);
-            RemoveStaged(stage, true, true);
+            RemoveStaged(stage, true, false);
         }
         removeConflicts(tx, conflicts);
         ClearPrioritisation(tx.GetHash());
@@ -1099,9 +1099,9 @@ void CTxMemPool::RemoveStaged(setEntries &stage, bool updateDescendants, bool fR
     AssertLockHeld(cs);
     UpdateForRemoveFromMempool(stage, updateDescendants);
     BOOST_FOREACH(const txiter& it, stage) {
-        removeUnchecked(it);
         if (fRemoveFromDb)
             dbRemoveTx(it->GetTx().GetHash()); 
+        removeUnchecked(it);
     }
 }
 
