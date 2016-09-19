@@ -991,9 +991,9 @@ void CTxMemPool::RemoveStaged(setEntries &stage, bool updateDescendants, bool fR
     AssertLockHeld(cs);
     UpdateForRemoveFromMempool(stage, updateDescendants);
     BOOST_FOREACH(const txiter& it, stage) {
-        removeUnchecked(it);
         if (fRemoveFromDb)
             dbRemoveTx(it->GetTx().GetHash()); 
+        removeUnchecked(it);
     }
 }
 
