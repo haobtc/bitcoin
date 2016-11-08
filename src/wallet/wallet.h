@@ -27,6 +27,7 @@
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
+#include <boost/thread.hpp>
 
 extern CWallet* pwalletMain;
 
@@ -53,7 +54,7 @@ static const bool DEFAULT_SPEND_ZEROCONF_CHANGE = true;
 //! Default for -sendfreetransactions
 static const bool DEFAULT_SEND_FREE_TRANSACTIONS = false;
 //! -txconfirmtarget default
-static const unsigned int DEFAULT_TX_CONFIRM_TARGET = 2;
+static const unsigned int DEFAULT_TX_CONFIRM_TARGET = 6;
 //! -walletrbf default
 static const bool DEFAULT_WALLET_RBF = false;
 //! Largest (in bytes) free transaction we're willing to create
@@ -133,7 +134,7 @@ struct CRecipient
 typedef std::map<std::string, std::string> mapValue_t;
 
 
-static void ReadOrderPos(int64_t& nOrderPos, mapValue_t& mapValue)
+static inline void ReadOrderPos(int64_t& nOrderPos, mapValue_t& mapValue)
 {
     if (!mapValue.count("n"))
     {
@@ -144,7 +145,7 @@ static void ReadOrderPos(int64_t& nOrderPos, mapValue_t& mapValue)
 }
 
 
-static void WriteOrderPos(const int64_t& nOrderPos, mapValue_t& mapValue)
+static inline void WriteOrderPos(const int64_t& nOrderPos, mapValue_t& mapValue)
 {
     if (nOrderPos == -1)
         return;
@@ -911,6 +912,12 @@ public:
 
     /* Initializes the wallet, returns a new CWallet instance or a null pointer in case of an error */
     static bool InitLoadWallet();
+
+    /**
+     * Wallet post-init setup
+     * Gives the wallet a chance to register repetitive tasks and complete post-init tasks
+     */
+    void postInitProcess(boost::thread_group& threadGroup);
 
     /* Wallets parameter interaction */
     static bool ParameterInteraction();
