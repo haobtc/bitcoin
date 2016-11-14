@@ -96,6 +96,7 @@ enum POOL_TYPE {
     POOL_HAOBTC= 119,   //http://haobtc.com/"
     POOL_BTCCOM= 120,   //http://pool.btc.com/"
     POOL_VIABTC= 121,   //http://6Yviabtc.com/"
+    POOL_BITCOIN_INDIA= 122,   //http://bitcoin-india.org/"
 };
  
 enum BIP_TYPE {
