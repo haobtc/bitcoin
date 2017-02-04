@@ -35,6 +35,7 @@ struct SERVER_DB_OPS {
   int (*add_tx_statics)(int txid, int in_count, int out_count,
                         long long in_value, long long out_value);
   int (*save_blk_tx)(int blk_id, int tx_id, int idx);
+  int (*save_multi_blk_tx)(const char *data);
   int (*save_tx)(unsigned char *hash, int version, int lock_time, bool coinbase,
                  int tx_size,  long long recv_time, const char *ip, 
                  unsigned char* wtxid, int wsize, int vsize);

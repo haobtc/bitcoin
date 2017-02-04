@@ -685,6 +685,45 @@ int pg_save_blk_tx(int blk_id, int tx_id, int idx) {
   return 0;
 }
 
+int pg_save_multi_blk_tx(const char *data) {
+  PGresult *res;
+  ExecStatusType rescode;
+  int copy_result = 0;
+
+  res = PQexec((PGconn *)dbSrv.db_conn, "COPY mytable FROM stdin");
+
+  /*  can be call repeatedly */ 
+
+  copy_result = PQputCopyData((PGconn *)dbSrv.db_conn, data, sizeof(data));
+  if (copy_result != 1)
+      {
+      LogPrint("dblayer", "Copy to target table failed: %s\n",
+              PQerrorMessage((PGconn *)dbSrv.db_conn));
+      PQclear(res);
+      return -1;
+      }
+  
+  if (PQputCopyEnd((PGconn *)dbSrv.db_conn, NULL) == -1)
+      {
+      LogPrint("dblayer", "Copy to target table failed: %s\n",
+               PQerrorMessage((PGconn *)dbSrv.db_conn));
+      PQclear(res);
+      return -1;
+      }
+
+  rescode = PQresultStatus(res);
+  if (!PGOK(rescode)) {
+    LogPrint("dblayer", "pg_save_multi_blk_tx failed: %s",
+             PQerrorMessage((const PGconn *)dbSrv.db_conn));
+    PQclear(res);
+    return -1;
+  }
+
+  PQclear(res);
+  return 0;
+}
+ 
+
 int pg_save_tx(unsigned char *hash, int version, int lock_time, bool coinbase,
                int tx_size, long long recv_time, const char *ip,
                 unsigned char* wtxid, int wsize, int vsize) {
@@ -1043,6 +1082,7 @@ struct SERVER_DB_OPS postgresql_db_ops = {
   .add_blk_statics = pg_add_blk_statics,
   .add_tx_statics = pg_add_tx_statics,
   .save_blk_tx = pg_save_blk_tx,
+  .save_multi_blk_tx = pg_save_multi_blk_tx,
   .save_tx = pg_save_tx,
   .save_utx = pg_save_utx,
   .save_txin = pg_save_txin,
