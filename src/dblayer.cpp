@@ -251,7 +251,7 @@ int dbSaveBlock(const CBlockIndex *blockindex, CBlock &block) {
   int pool_id = POOL_UNKNOWN;
   int poolBip = BIP_DEFAULT;
   std::map<int , int > idmap;
-  std::stringstream sdata;
+  std::string sdata;
 
    /*
   * For these case:
@@ -296,20 +296,22 @@ int dbSaveBlock(const CBlockIndex *blockindex, CBlock &block) {
       hash.begin(), height, version, prev_hash.begin(), mrkl_root.begin(), time,
       bits, nonce, blk_size, work.begin(), block.vtx.size(), pool_id, block.nTimeReceived, poolBip);
   if (blk_id == -1) {
-    dbSrv.db_ops->rollback();
+      dbSrv.db_ops->rollback();
       LogPrint("dblayer", "block save fail height: %d \n", height);
+      return -1;
   }
 
   
   std::map<int,int>::iterator it;
+  sdata.clear();
   for (it=idmap.begin(); it!=idmap.end(); ++it) {
-      sdata << strprintf("%d\t%d\t%d\n", blk_id, it->first, it->second);
+      sdata = sdata + strprintf("%d,%d,%d\n", blk_id, it->first, it->second);
   }
 
-  if (dbSrv.db_ops->save_multi_blk_tx(sdata.str().c_str())==-1) {
+  if (dbSrv.db_ops->save_multi_blk_tx(sdata.c_str())==-1) {
       LogPrint("dblayer", "bat_save_blk_tx save fail block : %d,  txhash: %s \n",
-               height, sdata.str());
-      //goto rollback;
+               height, sdata.c_str());
+      dbSrv.db_ops->rollback();
       return -1;
   }
 

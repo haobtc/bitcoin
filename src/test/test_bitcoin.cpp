@@ -19,6 +19,7 @@
 #include "ui_interface.h"
 #include "rpc/server.h"
 #include "rpc/register.h"
+#include "dblayer.h"
 
 #include "test/testutil.h"
 
@@ -47,6 +48,12 @@ BasicTestingSetup::~BasicTestingSetup()
 
 TestingSetup::TestingSetup(const std::string& chainName) : BasicTestingSetup(chainName)
 {
+    if (!dbOpen())
+      {
+      BOOST_ERROR("Error connect database fail!");
+      return ;
+      }
+   
     const CChainParams& chainparams = Params();
         // Ideally we'd move all the RPC tests to the functional testing framework
         // instead of unit tests, but for now we need these here.

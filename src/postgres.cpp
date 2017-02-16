@@ -36,7 +36,7 @@
 
 #define PGOK(_res)                                                             \
   ((_res) == PGRES_COMMAND_OK || (_res) == PGRES_TUPLES_OK ||                  \
-   (_res) == PGRES_EMPTY_QUERY)
+   (_res) == PGRES_EMPTY_QUERY || (_res) ==  PGRES_COPY_IN)
 
 #define WHERE_FFL " - from %s %s() line %d"
 #define WHERE_FFL_PASS __FILE__, __func__, __LINE__
@@ -690,11 +690,11 @@ int pg_save_multi_blk_tx(const char *data) {
   ExecStatusType rescode;
   int copy_result = 0;
 
-  res = PQexec((PGconn *)dbSrv.db_conn, "COPY mytable FROM stdin");
+  res = PQexec((PGconn *)dbSrv.db_conn, "COPY blk_tx (blk_id, tx_id, idx) FROM stdin DELIMITER ',';");
 
   /*  can be call repeatedly */ 
 
-  copy_result = PQputCopyData((PGconn *)dbSrv.db_conn, data, sizeof(data));
+  copy_result = PQputCopyData((PGconn *)dbSrv.db_conn, data, strlen(data));
   if (copy_result != 1)
       {
       LogPrint("dblayer", "Copy to target table failed: %s\n",
