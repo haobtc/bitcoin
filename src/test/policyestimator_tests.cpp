@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2015 The Bitcoin Core developers
+// Copyright (c) 2011-2016 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -45,7 +45,7 @@ BOOST_AUTO_TEST_CASE(BlockPolicyEstimates)
     CFeeRate baseRate(basefee, GetVirtualTransactionSize(tx));
 
     // Create a fake block
-    std::vector<CTransaction> block;
+    std::vector<CTransactionRef> block;
     int blocknum = 0;
 
     // Loop through 200 blocks
@@ -66,9 +66,9 @@ BOOST_AUTO_TEST_CASE(BlockPolicyEstimates)
             // 9/10 blocks add 2nd highest and so on until ...
             // 1/10 blocks add lowest fee transactions
             while (txHashes[9-h].size()) {
-                std::shared_ptr<const CTransaction> ptx = mpool.get(txHashes[9-h].back());
+                CTransactionRef ptx = mpool.get(txHashes[9-h].back());
                 if (ptx)
-                    block.push_back(*ptx);
+                    block.push_back(ptx);
                 txHashes[9-h].pop_back();
             }
         }
@@ -95,17 +95,22 @@ BOOST_AUTO_TEST_CASE(BlockPolicyEstimates)
     // Highest feerate is 10*baseRate and gets in all blocks,
     // second highest feerate is 9*baseRate and gets in 9/10 blocks = 90%,
     // third highest feerate is 8*base rate, and gets in 8/10 blocks = 80%,
-    // so estimateFee(1) should return 10*baseRate.
+    // so estimateFee(1) would return 10*baseRate but is hardcoded to return failure
     // Second highest feerate has 100% chance of being included by 2 blocks,
     // so estimateFee(2) should return 9*baseRate etc...
     for (int i = 1; i < 10;i++) {
         origFeeEst.push_back(mpool.estimateFee(i).GetFeePerK());
-        if (i > 1) { // Fee estimates should be monotonically decreasing
+        if (i > 2) { // Fee estimates should be monotonically decreasing
             BOOST_CHECK(origFeeEst[i-1] <= origFeeEst[i-2]);
         }
         int mult = 11-i;
-        BOOST_CHECK(origFeeEst[i-1] < mult*baseRate.GetFeePerK() + deltaFee);
-        BOOST_CHECK(origFeeEst[i-1] > mult*baseRate.GetFeePerK() - deltaFee);
+        if (i > 1) {
+            BOOST_CHECK(origFeeEst[i-1] < mult*baseRate.GetFeePerK() + deltaFee);
+            BOOST_CHECK(origFeeEst[i-1] > mult*baseRate.GetFeePerK() - deltaFee);
+        }
+        else {
+            BOOST_CHECK(origFeeEst[i-1] == CFeeRate(0).GetFeePerK());
+        }
     }
 
     // Mine 50 more blocks with no transactions happening, estimates shouldn't change
@@ -113,7 +118,8 @@ BOOST_AUTO_TEST_CASE(BlockPolicyEstimates)
     while (blocknum < 250)
         mpool.removeForBlock(block, ++blocknum);
 
-    for (int i = 1; i < 10;i++) {
+    BOOST_CHECK(mpool.estimateFee(1) == CFeeRate(0));
+    for (int i = 2; i < 10;i++) {
         BOOST_CHECK(mpool.estimateFee(i).GetFeePerK() < origFeeEst[i-1] + deltaFee);
         BOOST_CHECK(mpool.estimateFee(i).GetFeePerK() > origFeeEst[i-1] - deltaFee);
     }
@@ -143,15 +149,16 @@ BOOST_AUTO_TEST_CASE(BlockPolicyEstimates)
     // Estimates should still not be below original
     for (int j = 0; j < 10; j++) {
         while(txHashes[j].size()) {
-            std::shared_ptr<const CTransaction> ptx = mpool.get(txHashes[j].back());
+            CTransactionRef ptx = mpool.get(txHashes[j].back());
             if (ptx)
-                block.push_back(*ptx);
+                block.push_back(ptx);
             txHashes[j].pop_back();
         }
     }
     mpool.removeForBlock(block, 265);
     block.clear();
-    for (int i = 1; i < 10;i++) {
+    BOOST_CHECK(mpool.estimateFee(1) == CFeeRate(0));
+    for (int i = 2; i < 10;i++) {
         BOOST_CHECK(mpool.estimateFee(i).GetFeePerK() > origFeeEst[i-1] - deltaFee);
     }
 
@@ -163,16 +170,17 @@ BOOST_AUTO_TEST_CASE(BlockPolicyEstimates)
                 tx.vin[0].prevout.n = 10000*blocknum+100*j+k;
                 uint256 hash = tx.GetHash();
                 mpool.addUnchecked(hash, entry.Fee(feeV[j]).Time(GetTime()).Priority(0).Height(blocknum).FromTx(tx, &mpool));
-                std::shared_ptr<const CTransaction> ptx = mpool.get(hash);
+                CTransactionRef ptx = mpool.get(hash);
                 if (ptx)
-                    block.push_back(*ptx);
+                    block.push_back(ptx);
 
             }
         }
         mpool.removeForBlock(block, ++blocknum);
         block.clear();
     }
-    for (int i = 1; i < 10; i++) {
+    BOOST_CHECK(mpool.estimateFee(1) == CFeeRate(0));
+    for (int i = 2; i < 10; i++) {
         BOOST_CHECK(mpool.estimateFee(i).GetFeePerK() < origFeeEst[i-1] - deltaFee);
     }
 

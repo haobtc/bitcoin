@@ -15,6 +15,7 @@ bench_bench_bitcoin_SOURCES = \
   bench/bench.cpp \
   bench/bench.h \
   bench/checkblock.cpp \
+  bench/checkqueue.cpp \
   bench/Examples.cpp \
   bench/rollingbloom.cpp \
   bench/crypto_hash.cpp \
@@ -22,7 +23,9 @@ bench_bench_bitcoin_SOURCES = \
   bench/mempool_eviction.cpp \
   bench/verify_script.cpp \
   bench/base58.cpp \
-  bench/lockedpool.cpp
+  bench/lockedpool.cpp \
+  bench/perf.cpp \
+  bench/perf.h
 
 nodist_bench_bench_bitcoin_SOURCES = $(GENERATED_TEST_FILES)
 
@@ -67,7 +70,9 @@ bitcoin_bench_clean : FORCE
 
 %.raw.h: %.raw
 	@$(MKDIR_P) $(@D)
-	@echo "static unsigned const char $(*F)[] = {" >> $@
-	@$(HEXDUMP) -v -e '8/1 "0x%02x, "' -e '"\n"' $< | $(SED) -e 's/0x  ,//g' >> $@
-	@echo "};" >> $@
+	@{ \
+	 echo "static unsigned const char $(*F)[] = {" && \
+	 $(HEXDUMP) -v -e '8/1 "0x%02x, "' -e '"\n"' $< | $(SED) -e 's/0x  ,//g' && \
+	 echo "};"; \
+	} > "$@.new" && mv -f "$@.new" "$@"
 	@echo "Generated $@"

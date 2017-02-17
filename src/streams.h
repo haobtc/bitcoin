@@ -1,5 +1,5 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2015 The Bitcoin Core developers
+// Copyright (c) 2009-2016 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -69,6 +69,75 @@ OverrideStream<S> WithOrVersion(S* s, int nVersionFlag)
     return OverrideStream<S>(s, s->GetType(), s->GetVersion() | nVersionFlag);
 }
 
+/* Minimal stream for overwriting and/or appending to an existing byte vector
+ *
+ * The referenced vector will grow as necessary
+ */
+class CVectorWriter
+{
+ public:
+
+/*
+ * @param[in]  nTypeIn Serialization Type
+ * @param[in]  nVersionIn Serialization Version (including any flags)
+ * @param[in]  vchDataIn  Referenced byte vector to overwrite/append
+ * @param[in]  nPosIn Starting position. Vector index where writes should start. The vector will initially
+ *                    grow as necessary to  max(index, vec.size()). So to append, use vec.size().
+*/
+    CVectorWriter(int nTypeIn, int nVersionIn, std::vector<unsigned char>& vchDataIn, size_t nPosIn) : nType(nTypeIn), nVersion(nVersionIn), vchData(vchDataIn), nPos(nPosIn)
+    {
+        if(nPos > vchData.size())
+            vchData.resize(nPos);
+    }
+/*
+ * (other params same as above)
+ * @param[in]  args  A list of items to serialize starting at nPos.
+*/
+    template <typename... Args>
+    CVectorWriter(int nTypeIn, int nVersionIn, std::vector<unsigned char>& vchDataIn, size_t nPosIn, Args&&... args) : CVectorWriter(nTypeIn, nVersionIn, vchDataIn, nPosIn)
+    {
+        ::SerializeMany(*this, std::forward<Args>(args)...);
+    }
+    void write(const char* pch, size_t nSize)
+    {
+        assert(nPos <= vchData.size());
+        size_t nOverwrite = std::min(nSize, vchData.size() - nPos);
+        if (nOverwrite) {
+            memcpy(vchData.data() + nPos, reinterpret_cast<const unsigned char*>(pch), nOverwrite);
+        }
+        if (nOverwrite < nSize) {
+            vchData.insert(vchData.end(), reinterpret_cast<const unsigned char*>(pch) + nOverwrite, reinterpret_cast<const unsigned char*>(pch) + nSize);
+        }
+        nPos += nSize;
+    }
+    template<typename T>
+    CVectorWriter& operator<<(const T& obj)
+    {
+        // Serialize to this stream
+        ::Serialize(*this, obj);
+        return (*this);
+    }
+    int GetVersion() const
+    {
+        return nVersion;
+    }
+    int GetType() const
+    {
+        return nType;
+    }
+    void seek(size_t nSize)
+    {
+        nPos += nSize;
+        if(nPos > vchData.size())
+            vchData.resize(nPos);
+    }
+private:
+    const int nType;
+    const int nVersion;
+    std::vector<unsigned char>& vchData;
+    size_t nPos;
+};
+
 /** Double ended buffer combining vector and stream-like interfaces.
  *
  * >> and << read and write unformatted data using the above serialization templates.
@@ -105,12 +174,10 @@ public:
         Init(nTypeIn, nVersionIn);
     }
 
-#if !defined(_MSC_VER) || _MSC_VER >= 1300
     CDataStream(const char* pbegin, const char* pend, int nTypeIn, int nVersionIn) : vch(pbegin, pend)
     {
         Init(nTypeIn, nVersionIn);
     }
-#endif
 
     CDataStream(const vector_type& vchIn, int nTypeIn, int nVersionIn) : vch(vchIn.begin(), vchIn.end())
     {
@@ -176,6 +243,8 @@ public:
     void clear()                                     { vch.clear(); nReadPos = 0; }
     iterator insert(iterator it, const char& x=char()) { return vch.insert(it, x); }
     void insert(iterator it, size_type n, const char& x) { vch.insert(it, n, x); }
+    value_type* data()                               { return vch.data() + nReadPos; }
+    const value_type* data() const                   { return vch.data() + nReadPos; }
 
     void insert(iterator it, std::vector<char>::const_iterator first, std::vector<char>::const_iterator last)
     {
@@ -190,7 +259,6 @@ public:
             vch.insert(it, first, last);
     }
 
-#if !defined(_MSC_VER) || _MSC_VER >= 1300
     void insert(iterator it, const char* first, const char* last)
     {
         assert(last - first >= 0);
@@ -203,7 +271,6 @@ public:
         else
             vch.insert(it, first, last);
     }
-#endif
 
     iterator erase(iterator it)
     {
