@@ -486,6 +486,8 @@ std::string HelpMessage(HelpMessageMode mode)
     strUsage += "  -dbuser=<username>\n";
     strUsage += "  -dbpass=<password>\n";
     strUsage += "  -deleteallutx=<true>\n";
+    strUsage += "  -litedb=<false>\n";
+    strUsage += "  -liteheight=<0>\n";
     return strUsage;
 }
 
