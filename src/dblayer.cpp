@@ -150,11 +150,11 @@ int dbSaveTx(const CTransaction &tx) {
       if (GetTransaction(txin.prevout.hash, txp, Params().GetConsensus(), hashBlockp, true)) {
         in_value += txp.vout[txin.prevout.n].nValue;
       }
-      else if (tx_idx !=0 ) {
-          LogPrint("dblayer", "Tx hash: %s\n", txin.prevout.hash.ToString());
-          LogPrint("dblayer", "GetTransaction fail, check if txindex is opening!\n");
-          return -1;
-      }
+//      else if (tx_idx !=0 ) {
+//          LogPrint("dblayer", "Tx hash: %s\n", txin.prevout.hash.ToString());
+//          LogPrint("dblayer", "GetTransaction fail, check if txindex is opening!\n");
+//          return -1;
+//      }
 
       if (!tx.wit.IsNull()) {
             if (!tx.wit.vtxinwit[tx_idx].IsNull()) {
