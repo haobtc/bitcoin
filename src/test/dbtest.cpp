@@ -85,7 +85,7 @@ BOOST_AUTO_TEST_CASE(test_save_blk)
       if (dbSaveBlock(&blockindex, block) == -1) {
         BOOST_ERROR("Bad test: " << strHash);
       }
-      printf("- Save block to db: %.2fms height %d\n",
+      printf("\n- Save block to db: %.2fms height %d\n",
                (GetTimeMicros() - nStart) * 0.001, blockindex.nHeight);
 
       //pblockindex = pblockindex->pprev; 
