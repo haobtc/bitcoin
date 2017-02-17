@@ -613,9 +613,10 @@ static int pg_save_blk(unsigned char *hash, int height, int version,
   const char *paramvalues[14];
 
   // check if block in database
-  if (pg_query_blk(hash) > 0) {
+  id = pg_query_blk(hash);
+  if ( id > 0) {
     LogPrint("dblayer", "pg_save_blk : block %d exists in database.\n", height);
-    return -1;
+    return id;
   }
 
   /* PG does a fine job with timestamps so we won't bother. */
