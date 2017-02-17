@@ -251,7 +251,6 @@ int dbSaveBlock(const CBlockIndex *blockindex, CBlock &block) {
   int pool_id = POOL_UNKNOWN;
   int poolBip = BIP_DEFAULT;
   std::map<int , int > idmap;
-  std::string sdata;
 
    /*
   * For these case:
@@ -277,7 +276,7 @@ int dbSaveBlock(const CBlockIndex *blockindex, CBlock &block) {
       if (tx_id == -1) {
           LogPrint("dblayer", "tx save fail block height: %d,  txhash: %s \n",
                    height, tx.GetHash().ToString());
-          //goto rollback;
+          dbSrv.db_ops->rollback();
           return -1;
       }
 
@@ -303,6 +302,8 @@ int dbSaveBlock(const CBlockIndex *blockindex, CBlock &block) {
 
   
   std::map<int,int>::iterator it;
+  std::string sdata;
+
   sdata.clear();
   for (it=idmap.begin(); it!=idmap.end(); ++it) {
       sdata = sdata + strprintf("%d,%d,%d\n", blk_id, it->first, it->second);
@@ -317,17 +318,13 @@ int dbSaveBlock(const CBlockIndex *blockindex, CBlock &block) {
 
   if (dbSrv.db_ops->add_blk_statics(blk_id) == -1) {
       LogPrint("dblayer", "add_blk_statics fail block : %d\n", height);
-        goto rollback;
+        dbSrv.db_ops->rollback();
+        return -1;
         }
 
   dbSrv.db_ops->commit();
 
   return 0;
-
-rollback:
-
-  dbSrv.db_ops->rollback();
-  return -1;
 
 }
 
