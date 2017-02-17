@@ -62,6 +62,7 @@ struct SERVER_DB_OPS {
   void (*commit)(void);
   bool (*open)(void);
   void (*close)(void);
+  bool (*connected)(void);
 };
 
 enum SERVER_DB_ENGINE {

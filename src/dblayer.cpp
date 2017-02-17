@@ -244,6 +244,13 @@ int dbSaveBlock(const CBlockIndex *blockindex, CBlock &block) {
   uint256 hash = block.GetHash();
   uint256 prev_hash;
 
+  bool liteDb = GetArg("-litedb", false);
+  if (liteDb) {
+      int liteHeight = GetArg("-liteheight", 0);
+      if (liteHeight > blockindex->nHeight)
+          return 0;
+  }
+
   if (blockindex->pprev)
     prev_hash = blockindex->pprev->GetBlockHash();
   else
@@ -534,15 +541,25 @@ int dbSync(int newHeight) {
   CBlock block;
   CBlockIndex *pblockindex;
   static bool syncing=false;
+  int maxHeight = 0;
 
   if (syncing) return 0;
 
   syncing=true;
 
-  int maxHeight = dbSrv.db_ops->query_maxHeight();
-  if (maxHeight == -1) {//db connect lost or first sync
+  if (!dbSrv.db_ops->connected()) {
         syncing=false;
         return 0;
+  }
+
+  maxHeight = dbSrv.db_ops->query_maxHeight();
+  //if (maxHeight == -1) //first sync
+  //      maxHeight = 0;
+
+  bool liteDb = GetArg("-litedb", false);
+  if (liteDb) {
+      int liteHeight = GetArg("-liteheight", 0);
+      maxHeight = (maxHeight>liteHeight) ? maxHeight:liteHeight;
   }
 
   if (maxHeight + 1 == newHeight)
@@ -553,9 +570,7 @@ int dbSync(int newHeight) {
 
   // syndb
   if (maxHeight < chainActive.Height()) {
-    if (maxHeight != 0)
-      i = maxHeight + 1;
-    for (; i < (chainActive.Height() + 1); i++) {
+    for (i = maxHeight + 1; i < (chainActive.Height() + 1); i++) {
 
       if (ShutdownRequested()) {
         syncing=false;

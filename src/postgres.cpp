@@ -1238,6 +1238,7 @@ struct SERVER_DB_OPS postgresql_db_ops = {
   .commit = pg_commit,
   .open = pg_open,
   .close = pg_close,
+  .connected = pg_conncheck,
 };
 
 #endif /* HAVE_POSTGRESQL */
