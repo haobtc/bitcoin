@@ -62,20 +62,13 @@ BOOST_AUTO_TEST_CASE(test_save_blk)
   blockindex.pprev = &prev;
   blockindex.nHeight = 11;
 
-
-  //if (!dbOpen())
-  //    {
-  //    BOOST_ERROR("Error connect database fail!");
-  //    return ;
-  //    }
-
   for (; i < 1; i++) {
 
       int64_t nStart = GetTimeMicros();
       if (dbSaveBlock(&blockindex, block) == -1) {
         BOOST_ERROR("Bad test: " << strHash);
       }
-      printf("dblayer", "- Save block to db: %.2fms height %d\n",
+      printf("- Save block to db: %.2fms height %d\n",
                (GetTimeMicros() - nStart) * 0.001, blockindex.nHeight);
 
       //pblockindex = pblockindex->pprev; 
@@ -83,7 +76,6 @@ BOOST_AUTO_TEST_CASE(test_save_blk)
 
   dbClose();
 
-  BOOST_CHECK(!0);
 }
 
 BOOST_AUTO_TEST_SUITE_END() 
