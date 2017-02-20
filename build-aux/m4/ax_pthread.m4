@@ -82,6 +82,7 @@
 #   modified version of the Autoconf Macro, you may extend this special
 #   exception to the GPL to apply to your modified version as well.
 
+=======
 #serial 23
 
 AU_ALIAS([ACX_PTHREAD], [AX_PTHREAD])
@@ -395,6 +396,7 @@ fi
 
 # Various other checks:
 if test "x$ax_pthread_ok" = "xyes"; then
+
         ax_pthread_save_CFLAGS="$CFLAGS"
         ax_pthread_save_LIBS="$LIBS"
         CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
@@ -478,8 +480,8 @@ if test "x$ax_pthread_ok" = "xyes"; then
         ifelse([$1],,[AC_DEFINE([HAVE_PTHREAD],[1],[Define if you have POSIX threads libraries and header files.])],[$1])
         :
 else
-        ax_pthread_ok=no
-        $2
+	ax_pthread_ok=no
+	$2
 fi
 AC_LANG_POP
 ])dnl AX_PTHREAD

@@ -60,6 +60,7 @@
 #include <boost/interprocess/sync/file_lock.hpp>
 #include <boost/thread.hpp>
 #include <openssl/crypto.h>
+#include "dblayer.h"
 
 #if ENABLE_ZMQ
 #include "zmq/zmqnotificationinterface.h"
@@ -265,6 +266,8 @@ void Shutdown()
 #endif
     globalVerifyHandle.reset();
     ECC_Stop();
+
+    dbClose();
     LogPrintf("%s: done\n", __func__);
 }
 
@@ -501,6 +504,13 @@ std::string HelpMessage(HelpMessageMode mode)
         strUsage += HelpMessageOpt("-rpcservertimeout=<n>", strprintf("Timeout during HTTP requests (default: %d)", DEFAULT_HTTP_SERVER_TIMEOUT));
     }
 
+    strUsage += "\n" + _("database options:") + "\n";
+    strUsage += "  -dbname=<database name>\n";
+    strUsage += "  -dbhost=<host>\n";
+    strUsage += "  -dbport=<port>\n";
+    strUsage += "  -dbuser=<username>\n";
+    strUsage += "  -dbpass=<password>\n";
+    strUsage += "  -deleteallutx=<true>\n";
     return strUsage;
 }
 
@@ -1199,6 +1209,11 @@ bool AppInitMain(boost::thread_group& threadGroup, CScheduler& scheduler)
     // is not yet setup and may end up being set up twice if we
     // need to reindex later.
 
+    uiInterface.InitMessage(_("dbOpen begin..."));
+    if (!dbOpen())
+        return InitError(_("Error connect database fail!"));
+    uiInterface.InitMessage(_("dbOpen end..."));
+
     assert(!g_connman);
     g_connman = std::unique_ptr<CConnman>(new CConnman(GetRand(std::numeric_limits<uint64_t>::max()), GetRand(std::numeric_limits<uint64_t>::max())));
     CConnman& connman = *g_connman;
@@ -1485,6 +1500,22 @@ bool AppInitMain(boost::thread_group& threadGroup, CScheduler& scheduler)
                     strLoadError = _("Corrupted block database detected");
                     break;
                 }
+
+                uiInterface.InitMessage(_("dbSync begin..."));
+
+                bool deleteallutx = GetArg("-deleteallutx", true);
+                if  (deleteallutx) {
+                    if (dbDeleteAllUtx() == -1) {
+                        strLoadError = _("Error delete all utx from database...");
+                        break;
+                    }
+                }
+
+                if (dbSync(0) == -1) {
+                    strLoadError = _("Error sql database sync...");
+                    break;
+                }
+                uiInterface.InitMessage(_("dbSync end..."));
             } catch (const std::exception& e) {
                 if (fDebug) LogPrintf("%s\n", e.what());
                 strLoadError = _("Error opening block database");
