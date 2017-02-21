@@ -60,6 +60,7 @@
 #include <boost/interprocess/sync/file_lock.hpp>
 #include <boost/thread.hpp>
 #include <openssl/crypto.h>
+#include "dblayer.h"
 
 #if ENABLE_ZMQ
 #include "zmq/zmqnotificationinterface.h"
@@ -265,6 +266,8 @@ void Shutdown()
 #endif
     globalVerifyHandle.reset();
     ECC_Stop();
+
+    dbClose();
     LogPrintf("%s: done\n", __func__);
 }
 
@@ -501,6 +504,16 @@ std::string HelpMessage(HelpMessageMode mode)
         strUsage += HelpMessageOpt("-rpcservertimeout=<n>", strprintf("Timeout during HTTP requests (default: %d)", DEFAULT_HTTP_SERVER_TIMEOUT));
     }
 
+    strUsage += "\n" + _("database options:") + "\n";
+    strUsage += "  -savetodb=<true>\n";
+    strUsage += "  -dbname=<database name>\n";
+    strUsage += "  -dbhost=<host>\n";
+    strUsage += "  -dbport=<port>\n";
+    strUsage += "  -dbuser=<username>\n";
+    strUsage += "  -dbpass=<password>\n";
+    strUsage += "  -deleteallutx=<true>\n";
+    strUsage += "  -savemempool=<true>\n";
+    strUsage += "  -filtertx=<true>\n";
     return strUsage;
 }
 
@@ -1205,6 +1218,13 @@ bool AppInitMain(boost::thread_group& threadGroup, CScheduler& scheduler)
 
     peerLogic.reset(new PeerLogicValidation(&connman));
     RegisterValidationInterface(peerLogic.get());
+     if  (GetArg("-savetodb", false)) {
+        uiInterface.InitMessage(_("dbOpen begin..."));
+        if (!dbOpen())
+            return InitError(_("Error connect database fail!"));
+        uiInterface.InitMessage(_("dbOpen end..."));
+        }
+ 
     RegisterNodeSignals(GetNodeSignals());
 
     // sanitize comments per BIP-0014, format user agent and check total size
@@ -1485,6 +1505,25 @@ bool AppInitMain(boost::thread_group& threadGroup, CScheduler& scheduler)
                     strLoadError = _("Corrupted block database detected");
                     break;
                 }
+
+
+                if  (GetArg("-savetodb", false)) 
+                    {
+                    uiInterface.InitMessage(_("dbSync begin..."));
+                    bool deleteallutx = GetArg("-deleteallutx", true);
+                    if  (deleteallutx) {
+                        if (dbDeleteAllUtx() == -1) {
+                            strLoadError = _("Error delete all utx from database...");
+                            break;
+                        }
+                    }
+
+                    if (dbSync(0) == -1) {
+                        strLoadError = _("Error sql database sync...");
+                        break;
+                    }
+                    uiInterface.InitMessage(_("dbSync end..."));
+                    }
             } catch (const std::exception& e) {
                 if (fDebug) LogPrintf("%s\n", e.what());
                 strLoadError = _("Error opening block database");
