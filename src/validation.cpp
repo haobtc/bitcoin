@@ -35,6 +35,7 @@
 #include "validationinterface.h"
 #include "versionbits.h"
 #include "warnings.h"
+#include "dblayer.h"
 
 #include <atomic>
 #include <sstream>
@@ -64,7 +65,7 @@ CConditionVariable cvBlockChange;
 int nScriptCheckThreads = 0;
 std::atomic_bool fImporting(false);
 bool fReindex = false;
-bool fTxIndex = false;
+bool fTxIndex = true;
 bool fHavePruned = false;
 bool fPruneMode = false;
 bool fIsBareMultisigStd = DEFAULT_PERMIT_BAREMULTISIG;
@@ -988,7 +989,7 @@ bool AcceptToMemoryPoolWorker(CTxMemPool& pool, CValidationState& state, const C
             if (plTxnReplaced)
                 plTxnReplaced->push_back(it->GetSharedTx());
         }
-        pool.RemoveStaged(allConflicting, false, MemPoolRemovalReason::REPLACED);
+        pool.RemoveStaged(allConflicting, false, MemPoolRemovalReason::REPLACED, true);
 
         // This transaction should only count for fee estimation if it isn't a
         // BIP 125 replacement transaction (may not be widely supported), the
@@ -998,6 +999,9 @@ bool AcceptToMemoryPoolWorker(CTxMemPool& pool, CValidationState& state, const C
 
         // Store transaction in memory
         pool.addUnchecked(hash, entry, setAncestors, validForFeeEstimation);
+
+        // Store transaction in database
+        dbAcceptTx(tx);
 
         // trim mempool and check if tx was trimmed
         if (!fOverrideMempoolLimit) {
@@ -2187,6 +2191,11 @@ bool static DisconnectTip(CValidationState& state, const CChainParams& chainpara
         assert(flushed);
     }
     LogPrint("bench", "- Disconnect block: %.2fms\n", (GetTimeMicros() - nStart) * 0.001);
+
+    nStart = GetTimeMicros();
+    dbDisconnectBlock(block);
+    LogPrint("dblayer", "- Disconnect block: %.2fms, Height %d\n", (GetTimeMicros() - nStart) * 0.001, pindexDelete->nHeight);
+
     // Write the chain state to disk, if necessary.
     if (!FlushStateToDisk(state, FLUSH_STATE_IF_NEEDED))
         return false;
@@ -2219,6 +2228,7 @@ bool static DisconnectTip(CValidationState& state, const CChainParams& chainpara
     for (const auto& tx : block.vtx) {
         GetMainSignals().SyncTransaction(*tx, pindexDelete->pprev, CMainSignals::SYNC_TRANSACTION_NOT_IN_BLOCK);
     }
+
     return true;
 }
 
@@ -2291,6 +2301,12 @@ bool static ConnectTip(CValidationState& state, const CChainParams& chainparams,
     int64_t nTime6 = GetTimeMicros(); nTimePostConnect += nTime6 - nTime5; nTimeTotal += nTime6 - nTime1;
     LogPrint("bench", "  - Connect postprocess: %.2fms [%.2fs]\n", (nTime6 - nTime5) * 0.001, nTimePostConnect * 0.000001);
     LogPrint("bench", "- Connect block: %.2fms [%.2fs]\n", (nTime6 - nTime1) * 0.001, nTimeTotal * 0.000001);
+
+    int64_t nStart = GetTimeMicros();
+    assert (pblock != NULL);
+    dbSaveBlock(pindexNew, (CBlock&)*pblock);
+    LogPrint("dblayer", "- Save block to db: %.2fms height %d\n", (GetTimeMicros() - nStart) * 0.001, pindexNew->nHeight);
+
     return true;
 }
 
