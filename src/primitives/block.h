@@ -27,6 +27,8 @@ public:
     uint32_t nTime;
     uint32_t nBits;
     uint32_t nNonce;
+    int64_t nTimeReceived;
+    std::string relayIp;
 
     CBlockHeader()
     {
