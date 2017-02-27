@@ -37,12 +37,12 @@ struct SERVER_DB_OPS {
   int (*save_blk_tx)(int blk_id, int tx_id, int idx);
   int (*save_tx)(unsigned char *hash, int version, int lock_time, bool coinbase,
                  int tx_size,  long long recv_time,
-                 const char *ip, int metatype);
+                 const char *ip, unsigned char* wtxid, int wsize, int vsize, int metatype);
   int (*readd_tx)(int txId);
   int (*save_utx)(int txid);
   int (*save_txin)(int tx_id, int tx_idx, int prev_out_index, unsigned int sequence,
                    const unsigned char *script_sig, int script_len,
-                   const unsigned char *prev_out);
+                   const unsigned char *prev_out, const unsigned char *witness, int witness_len);
   int (*save_txout)(int tx_id, int idx, const unsigned char *scriptPubKey,
                     int script_len, long long nValue, int txout_type);
   int (*save_addr)(const char *addr, const char *hash160);
@@ -87,7 +87,6 @@ int  dbRemoveTx(uint256 txhash);
 int  dbSync(int newHeight);
 int  dbDeleteAllUtx();
 int  dbFilterTx(uint256 &hash );
-int  dbDumpMempool();
 
 
 extern int getTxMetaType(const CTransaction &tx);

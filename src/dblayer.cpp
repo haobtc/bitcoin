@@ -29,6 +29,7 @@
 #include "util.h"
 #include "init.h"
 #include "script/standard.h"
+#include "policy/policy.h"
 #include "txmempool.h"
 #include "dblayer.h"
 #include "pool.h"
@@ -60,10 +61,10 @@ struct DBSERVER dbSrv = {
 
 int  getPoolId(const CTransaction &tx) {
 
-    int id = 0;
+    int id = -1;
 
     id = getPoolIdByPrefix(&tx.vin[0].scriptSig[0], tx.vin[0].scriptSig.size());
-    if (id == 0) {
+    if (id == -1) {
         // as p2pool
         if ((tx.vin[0].scriptSig.size() == 4) && (tx.vout.size()>3)) 
             return POOL_P2POOL;
@@ -78,14 +79,14 @@ int  getPoolId(const CTransaction &tx) {
             int nRequired;
  
             if (!ExtractDestinations(txout.scriptPubKey, txout_type, addresses, nRequired))
-                 return 0;
+                 return -1;
 
             BOOST_FOREACH(const CTxDestination & dest, addresses) {
                 if (boost::get<CNoDestination>(&dest))
                     continue;
                 CBitcoinAddress addr(dest);
                 id = getPoolIdByAddr(addr.ToString().c_str());
-                if (id != 0)
+                if (id != -1)
                    return id;
                 }
             }
@@ -116,18 +117,27 @@ int dbSaveTx(const CTransaction &tx) {
   const int32_t version = tx.nVersion;
   const uint32_t lock_time = tx.nLockTime;
   bool coinbase = tx.IsCoinBase();
-  unsigned int tx_size = ::GetSerializeSize(tx, SER_NETWORK, PROTOCOL_VERSION);
+  unsigned int tx_size = ::GetSerializeSize(tx, SER_NETWORK, PROTOCOL_VERSION | SERIALIZE_TRANSACTION_NO_WITNESS);
   int in_count = tx.vin.size();
   int out_count = tx.vout.size();
   long long in_value = 0;
   long long out_value = 0;
+  uint256 wtxid;
+  int wsize = (int)::GetSerializeSize(tx, SER_NETWORK, PROTOCOL_VERSION);
+  int vsize =  (int)::GetVirtualTransactionSize(tx);
   int metaType = getTxMetaType(tx);
 
   int tx_id = dbSrv.db_ops->query_tx(hash.begin());
   if (tx_id == -1) {
+
+    if (!tx.IsCoinBase())
+        wtxid = tx.GetWitnessHash();
+    else
+        wtxid.SetNull();
+
     tx_id = dbSrv.db_ops->save_tx(hash.begin(), version, lock_time, coinbase,
                                   tx_size, tx.nTimeReceived,
-                                  tx.relayIp.c_str(), metaType);
+                                  tx.relayIp.c_str(), wtxid.begin(), wsize, vsize, metaType);
     if (tx_id == -1) {
       LogPrint("dblayer", "save_tx error tx hash %s \n", hash.ToString());
       return -1;
@@ -138,6 +148,7 @@ int dbSaveTx(const CTransaction &tx) {
       uint256 hashBlockp;
       int prev_out_index = txin.prevout.n;
       uint256 prev_out = txin.prevout.hash;
+      std::vector<unsigned char> txinwitness;
 
       if (GetTransaction(txin.prevout.hash, txp, Params().GetConsensus(), hashBlockp, true)) {
         in_value += txp.vout[txin.prevout.n].nValue;
@@ -148,9 +159,23 @@ int dbSaveTx(const CTransaction &tx) {
           return -1;
       }
 
+      if (!tx.wit.IsNull()) {
+            if (!tx.wit.vtxinwit[tx_idx].IsNull()) {
+                if (!tx.wit.vtxinwit[tx_idx].scriptWitness.IsNull()) {
+                    txinwitness.clear();
+                    for (unsigned int j = 0; j < tx.wit.vtxinwit[tx_idx].scriptWitness.stack.size(); j++) {
+                        std::vector<unsigned char> item = tx.wit.vtxinwit[tx_idx].scriptWitness.stack[j];
+                        if (item.size()<=0)
+                            continue;
+                        txinwitness.insert(txinwitness.end(),item.begin(), item.end());
+                    }
+                }
+            }
+      }
+
       int txin_id = dbSrv.db_ops->save_txin(
           tx_id, tx_idx, prev_out_index, txin.nSequence, &txin.scriptSig[0],
-          txin.scriptSig.size(), prev_out.begin());
+          txin.scriptSig.size(), prev_out.begin(), (const unsigned char *)(&*txinwitness.begin()), txinwitness.size());
       if (txin_id == -1) {
         LogPrint("dblayer", "save_txin error txid %d txin index %d \n", tx_id,
                  tx_idx);
@@ -402,9 +427,6 @@ int dbAcceptTx(const CTransaction &tx) {
     dbSrv.db_ops->rollback();
     return -1;
   }
-
-  dbSaveToMempool(tx_id, tx);
-
   dbSrv.db_ops->commit();
 
   return 0;
@@ -432,6 +454,80 @@ int dbRemoveTx(uint256 txhash) {
   }
 
   dbSrv.db_ops->commit();
+
+  return 0;
+}
+
+int testGetPool() {
+  int i = 0;
+  CBlock block;
+  CBlockIndex *pblockindex;
+  int pool_id =-1;
+
+  int maxHeight = dbSrv.db_ops->query_maxHeight();
+  if (maxHeight == -1) {
+        return -1;
+  }
+
+  // syndb
+  for (; i < (chainActive.Height() + 1); i++) {
+
+    if (ShutdownRequested()) {
+      LogPrint("dblayer", "Shutdown requested. Exiting.");
+      return -1;
+    }
+
+    pblockindex = chainActive[i];
+    int64_t nStart = GetTimeMicros();
+    if (!ReadBlockFromDisk(block, pblockindex, Params().GetConsensus())) {
+      return -1;
+    }
+    LogPrint("dblayer", "- read block from disk: %.2fms\n",
+             (GetTimeMicros() - nStart) * 0.001);
+
+    pool_id = getPoolId(block.vtx[0]);
+    if (pool_id==-1)
+        LogPrint("dblayer", "- can't get poolId height %d\n", pblockindex->nHeight);
+  }
+
+  return 0;
+}
+
+int testGetPool1() {
+  int i = 0;
+  CBlock block;
+  CBlockIndex *pblockindex;
+  int pool_id =-1;
+
+  pblockindex = chainActive[367876];
+  if (!ReadBlockFromDisk(block, pblockindex, Params().GetConsensus())) {
+    return -1;
+  }
+
+  pool_id = getPoolId(block.vtx[0]);
+ 
+
+  int maxHeight = dbSrv.db_ops->query_maxHeight();
+  if (maxHeight == -1) {
+        return -1;
+  }
+
+  // syndb
+  for (i=360419; i >0; i--) {
+
+    if (ShutdownRequested()) {
+      LogPrint("dblayer", "Shutdown requested. Exiting.");
+      return -1;
+    }
+
+    pblockindex = chainActive[i];
+    if (!ReadBlockFromDisk(block, pblockindex, Params().GetConsensus())) {
+      return -1;
+    }
+    pool_id = getPoolId(block.vtx[0]);
+    if (pool_id==-1)
+        LogPrint("dblayer", "------ can't get poolId height %d size %d %s\n", pblockindex->nHeight, block.vtx[0].vin[0].scriptSig.size(), &block.vtx[0].vin[0].scriptSig[0]);
+  }
 
   return 0;
 }
@@ -467,12 +563,13 @@ int dbSync(int newHeight) {
       if (ShutdownRequested()) {
         syncing=false;
         LogPrint("dblayer", "Shutdown requested. Exiting.");
+        syncing=false;
         return -1;
       }
 
       pblockindex = chainActive[i];
       int64_t nStart = GetTimeMicros();
-      if(!ReadBlockFromDisk(block, pblockindex, Params().GetConsensus())) {
+      if (!ReadBlockFromDisk(block, pblockindex, Params().GetConsensus())) {
         syncing=false;
         return -1;
       }
