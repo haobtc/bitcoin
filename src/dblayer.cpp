@@ -18,7 +18,6 @@
 
 #include "base58.h"
 #include "keystore.h"
-#include "main.h"
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -30,6 +29,7 @@
 #include "init.h"
 #include "script/standard.h"
 #include "policy/policy.h"
+#include "validation.h"
 #include "txmempool.h"
 #include "dblayer.h"
 #include "pool.h"
@@ -144,14 +144,14 @@ int dbSaveTx(const CTransaction &tx) {
     }
 
     INDEX_FOREACH(tx_idx, const CTxIn & txin, tx.vin) {
-      CTransaction txp;
+      CTransactionRef txp;
       uint256 hashBlockp;
       int prev_out_index = txin.prevout.n;
       uint256 prev_out = txin.prevout.hash;
       std::vector<unsigned char> txinwitness;
 
       if (GetTransaction(txin.prevout.hash, txp, Params().GetConsensus(), hashBlockp, true)) {
-        in_value += txp.vout[txin.prevout.n].nValue;
+        in_value += txp->vout[txin.prevout.n].nValue;
       }
       else if (tx_idx !=0 ) {
           LogPrint("dblayer", "Tx hash: %s\n", txin.prevout.hash.ToString());
@@ -159,18 +159,16 @@ int dbSaveTx(const CTransaction &tx) {
           return -1;
       }
 
-      if (!tx.wit.IsNull()) {
-            if (!tx.wit.vtxinwit[tx_idx].IsNull()) {
-                if (!tx.wit.vtxinwit[tx_idx].scriptWitness.IsNull()) {
-                    txinwitness.clear();
-                    for (unsigned int j = 0; j < tx.wit.vtxinwit[tx_idx].scriptWitness.stack.size(); j++) {
-                        std::vector<unsigned char> item = tx.wit.vtxinwit[tx_idx].scriptWitness.stack[j];
-                        if (item.size()<=0)
-                            continue;
-                        txinwitness.insert(txinwitness.end(),item.begin(), item.end());
-                    }
-                }
-            }
+      if (!txin.scriptWitness.IsNull()) {
+          for (unsigned int j = 0; j < txin.scriptWitness.stack.size(); j++) {
+              std::vector<unsigned char> item = txin.scriptWitness.stack[j];
+              if (item.size()<=0)
+                  continue;
+              txinwitness.insert(txinwitness.end(),item.begin(), item.end());
+          }
+      }
+      else {
+          txinwitness.clear();
       }
 
       int txin_id = dbSrv.db_ops->save_txin(
@@ -277,8 +275,8 @@ int dbSaveBlock(const CBlockIndex *blockindex, CBlock &block) {
     goto rollback;
   }
 
-  poolBip = getPoolSupportBip(&block.vtx[0].vin[0].scriptSig[0], block.vtx[0].vin[0].scriptSig.size(), version);
-  pool_id = getPoolId(block.vtx[0]);
+  poolBip = getPoolSupportBip(&block.vtx[0]->vin[0].scriptSig[0], block.vtx[0]->vin[0].scriptSig.size(), version);
+  pool_id = getPoolId(*block.vtx[0]);
   blk_id = dbSrv.db_ops->save_blk(
       hash.begin(), height, version, prev_hash.begin(), mrkl_root.begin(), time,
       bits, nonce, blk_size, work.begin(), block.vtx.size(), pool_id, block.nTimeReceived, poolBip, block.relayIp.c_str());
@@ -298,17 +296,16 @@ int dbSaveBlock(const CBlockIndex *blockindex, CBlock &block) {
     }
   }
 
-  block.vtx[0].nTimeReceived = time;
-  INDEX_FOREACH(idx, const CTransaction & tx, block.vtx) {
-    int tx_id = dbSaveTx(tx);
+  INDEX_FOREACH(idx, CTransactionRef tx, block.vtx) {
+    int tx_id = dbSaveTx(*tx);
     if (tx_id == -1) {
         LogPrint("dblayer", "tx save fail block height: %d,  txhash: %s \n",
-               height, tx.GetHash().ToString());
+               height, tx->GetHash().ToString());
         goto rollback;
     }
     if (dbSrv.db_ops->save_blk_tx(blk_id, tx_id, idx)==-1) {
         LogPrint("dblayer", "blk_tx save fail block : %d,  txhash: %s \n",
-               height, tx.GetHash().ToString());
+               height, tx->GetHash().ToString());
         goto rollback;
         }
   }
@@ -329,81 +326,81 @@ rollback:
 
 }
 
-int dbDumpMempool() {
- 
-  if (!GetArg("-savetodb", false))
-      return -1;
+//int dbDumpMempool() {
+// 
+//  if (!GetArg("-savetodb", false))
+//      return -1;
+//
+//  if (dbSrv.db_ops->begin() == -1) {
+//    LogPrint("dblayer", "dbdumpMempool roll back: begin failed \n");
+//    dbSrv.db_ops->rollback();
+//    return -1;
+//  }
+//
+//  //clear mempool first
+//  LOCK(mempool.cs);
+//  dbSrv.db_ops->empty_mempool();
+//
+//  for (CTxMemPool::txiter  mi = mempool.mapTx.begin(); mi != mempool.mapTx.end(); mi++) {
+//    uint256 hash = mi->GetTx().GetHash();
+//    double entryPriority = mi->GetPriority(chainActive.Height());
+//    CAmount nFee =mi->GetFee();
+//    CAmount inChainInputValue = mi->GetInputValue();
+//    size_t nTxSize = mi->GetTxSize();
+//    int64_t nTime = mi->GetTime();
+//    unsigned int entryHeight = mi->GetHeight();
+//    bool hadNoDependencies = mi->WasClearAtEntry();
+//    unsigned int sigOpCount = mi->GetSigOpCount();
+//    int64_t modifiedFee = mi->GetModifiedFee();
+//    size_t nModSize = mi->GetTx().CalculateModifiedSize(nTxSize);
+//    size_t nUsageSize = mi->DynamicMemoryUsage();
+//    bool dirty = mi->IsDirty();
+//    uint64_t nCountWithDescendants = mi->GetCountWithDescendants();
+//    uint64_t nSizeWithDescendants = mi->GetSizeWithDescendants();
+//    CAmount nModFeesWithDescendants = mi->GetModFeesWithDescendants();
+//    bool spendsCoinbase = mi->GetSpendsCoinbase();
+//  
+//    if (dbSrv.db_ops->save_mempool(0, hash.begin(), entryPriority ,nFee ,inChainInputValue ,nTxSize ,nTime ,entryHeight ,hadNoDependencies ,sigOpCount ,modifiedFee ,nModSize ,nUsageSize ,dirty ,nCountWithDescendants ,nSizeWithDescendants ,nModFeesWithDescendants ,spendsCoinbase) == -1) { 
+//      LogPrint("dblayer", "dbdumpMempool roll back: tx %s \n", hash.ToString());
+//      dbSrv.db_ops->rollback();
+//      return -1;
+//      }
+//    }
+//
+//  dbSrv.db_ops->commit();
+//  return 0;
+// 
+//}
 
-  if (dbSrv.db_ops->begin() == -1) {
-    LogPrint("dblayer", "dbdumpMempool roll back: begin failed \n");
-    dbSrv.db_ops->rollback();
-    return -1;
-  }
-
-  //clear mempool first
-  LOCK(mempool.cs);
-  dbSrv.db_ops->empty_mempool();
-
-  for (CTxMemPool::txiter  mi = mempool.mapTx.begin(); mi != mempool.mapTx.end(); mi++) {
-    uint256 hash = mi->GetTx().GetHash();
-    double entryPriority = mi->GetPriority(chainActive.Height());
-    CAmount nFee =mi->GetFee();
-    CAmount inChainInputValue = mi->GetInputValue();
-    size_t nTxSize = mi->GetTxSize();
-    int64_t nTime = mi->GetTime();
-    unsigned int entryHeight = mi->GetHeight();
-    bool hadNoDependencies = mi->WasClearAtEntry();
-    unsigned int sigOpCount = mi->GetSigOpCount();
-    int64_t modifiedFee = mi->GetModifiedFee();
-    size_t nModSize = mi->GetTx().CalculateModifiedSize(nTxSize);
-    size_t nUsageSize = mi->DynamicMemoryUsage();
-    bool dirty = mi->IsDirty();
-    uint64_t nCountWithDescendants = mi->GetCountWithDescendants();
-    uint64_t nSizeWithDescendants = mi->GetSizeWithDescendants();
-    CAmount nModFeesWithDescendants = mi->GetModFeesWithDescendants();
-    bool spendsCoinbase = mi->GetSpendsCoinbase();
-  
-    if (dbSrv.db_ops->save_mempool(0, hash.begin(), entryPriority ,nFee ,inChainInputValue ,nTxSize ,nTime ,entryHeight ,hadNoDependencies ,sigOpCount ,modifiedFee ,nModSize ,nUsageSize ,dirty ,nCountWithDescendants ,nSizeWithDescendants ,nModFeesWithDescendants ,spendsCoinbase) == -1) { 
-      LogPrint("dblayer", "dbdumpMempool roll back: tx %s \n", hash.ToString());
-      dbSrv.db_ops->rollback();
-      return -1;
-      }
-    }
-
-  dbSrv.db_ops->commit();
-  return 0;
- 
-}
-
-void dbSaveToMempool(int tx_id, const CTransaction &tx) {
- 
-  uint256 hash = tx.GetHash();
-  CTxMemPool::txiter mi = mempool.mapTx.find(hash);
-  if (mi == mempool.mapTx.end())
-      return;
-
-  double entryPriority = mi->GetPriority(chainActive.Height());
-  CAmount nFee =mi->GetFee();
-  CAmount inChainInputValue = mi->GetInputValue();
-  size_t nTxSize = mi->GetTxSize();
-  int64_t nTime = mi->GetTime();
-  unsigned int entryHeight = mi->GetHeight();
-  bool hadNoDependencies = mi->WasClearAtEntry();
-  unsigned int sigOpCount = mi->GetSigOpCount();
-  int64_t modifiedFee = mi->GetModifiedFee();
-  size_t nModSize = tx.CalculateModifiedSize(nTxSize);
-  size_t nUsageSize = mi->DynamicMemoryUsage();
-  bool dirty = mi->IsDirty();
-  uint64_t nCountWithDescendants = mi->GetCountWithDescendants();
-  uint64_t nSizeWithDescendants = mi->GetSizeWithDescendants();
-  CAmount nModFeesWithDescendants = mi->GetModFeesWithDescendants();
-  bool spendsCoinbase = mi->GetSpendsCoinbase();
-
-  if (dbSrv.db_ops->save_mempool(tx_id, hash.begin(), entryPriority ,nFee ,inChainInputValue ,nTxSize ,nTime ,entryHeight ,hadNoDependencies ,sigOpCount ,modifiedFee ,nModSize ,nUsageSize ,dirty ,nCountWithDescendants ,nSizeWithDescendants ,nModFeesWithDescendants ,spendsCoinbase) == -1) { 
-    LogPrint("dblayer", "dbAcceptTx roll back: %s \n", tx.GetHash().ToString());
-    dbSrv.db_ops->rollback();
-  }
-}
+//void dbSaveToMempool(int tx_id, const CTransaction &tx) {
+// 
+//  uint256 hash = tx.GetHash();
+//  CTxMemPool::txiter mi = mempool.mapTx.find(hash);
+//  if (mi == mempool.mapTx.end())
+//      return;
+//
+//  double entryPriority = mi->GetPriority(chainActive.Height());
+//  CAmount nFee =mi->GetFee();
+//  CAmount inChainInputValue = mi->GetInputValue();
+//  size_t nTxSize = mi->GetTxSize();
+//  int64_t nTime = mi->GetTime();
+//  unsigned int entryHeight = mi->GetHeight();
+//  bool hadNoDependencies = mi->WasClearAtEntry();
+//  unsigned int sigOpCount = mi->GetSigOpCount();
+//  int64_t modifiedFee = mi->GetModifiedFee();
+//  size_t nModSize = tx.CalculateModifiedSize(nTxSize);
+//  size_t nUsageSize = mi->DynamicMemoryUsage();
+//  bool dirty = mi->IsDirty();
+//  uint64_t nCountWithDescendants = mi->GetCountWithDescendants();
+//  uint64_t nSizeWithDescendants = mi->GetSizeWithDescendants();
+//  CAmount nModFeesWithDescendants = mi->GetModFeesWithDescendants();
+//  bool spendsCoinbase = mi->GetSpendsCoinbase();
+//
+//  if (dbSrv.db_ops->save_mempool(tx_id, hash.begin(), entryPriority ,nFee ,inChainInputValue ,nTxSize ,nTime ,entryHeight ,hadNoDependencies ,sigOpCount ,modifiedFee ,nModSize ,nUsageSize ,dirty ,nCountWithDescendants ,nSizeWithDescendants ,nModFeesWithDescendants ,spendsCoinbase) == -1) { 
+//    LogPrint("dblayer", "dbAcceptTx roll back: %s \n", tx.GetHash().ToString());
+//    dbSrv.db_ops->rollback();
+//  }
+//}
 
 int dbAcceptTx(const CTransaction &tx) {
 
@@ -485,7 +482,7 @@ int testGetPool() {
     LogPrint("dblayer", "- read block from disk: %.2fms\n",
              (GetTimeMicros() - nStart) * 0.001);
 
-    pool_id = getPoolId(block.vtx[0]);
+    pool_id = getPoolId(*block.vtx[0]);
     if (pool_id==-1)
         LogPrint("dblayer", "- can't get poolId height %d\n", pblockindex->nHeight);
   }
@@ -504,7 +501,7 @@ int testGetPool1() {
     return -1;
   }
 
-  pool_id = getPoolId(block.vtx[0]);
+  pool_id = getPoolId(*block.vtx[0]);
  
 
   int maxHeight = dbSrv.db_ops->query_maxHeight();
@@ -524,9 +521,9 @@ int testGetPool1() {
     if (!ReadBlockFromDisk(block, pblockindex, Params().GetConsensus())) {
       return -1;
     }
-    pool_id = getPoolId(block.vtx[0]);
+    pool_id = getPoolId(*block.vtx[0]);
     if (pool_id==-1)
-        LogPrint("dblayer", "------ can't get poolId height %d size %d %s\n", pblockindex->nHeight, block.vtx[0].vin[0].scriptSig.size(), &block.vtx[0].vin[0].scriptSig[0]);
+        LogPrint("dblayer", "------ can't get poolId height %d size %d %s\n", pblockindex->nHeight, block.vtx[0]->vin[0].scriptSig.size(), &block.vtx[0]->vin[0].scriptSig[0]);
   }
 
   return 0;

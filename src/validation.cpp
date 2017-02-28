@@ -2304,6 +2304,8 @@ bool static ConnectTip(CValidationState& state, const CChainParams& chainparams,
 
     int64_t nStart = GetTimeMicros();
     assert (pblock != NULL);
+
+    //pblock->vtx[0]->nTimeReceived = nStart;
     dbSaveBlock(pindexNew, (CBlock&)*pblock);
     LogPrint("dblayer", "- Save block to db: %.2fms height %d\n", (GetTimeMicros() - nStart) * 0.001, pindexNew->nHeight);
 

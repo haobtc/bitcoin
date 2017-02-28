@@ -1,8 +1,8 @@
 #include "core_io.h"
 #include "utilstrencodings.h"
 #include "key.h"
-#include "main.h"
-#include "rpcserver.h"
+#include "validation.h"
+#include "rpc/server.h"
 #include "script/script.h"
 #include "util.h"
 
