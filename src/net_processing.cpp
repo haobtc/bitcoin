@@ -2373,6 +2373,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         vRecv >> *pblock;
         pblock->nTimeReceived = nTimeReceived/1000000;
         pblock->relayIp = pfrom->addr.ToString();
+        pblock->vtx[0]->nTimeReceived = pblock->nTime;
 
         LogPrint("net", "received block %s peer=%d\n", pblock->GetHash().ToString(), pfrom->id);
 
