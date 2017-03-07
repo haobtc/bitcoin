@@ -36,6 +36,7 @@
 #include <boost/foreach.hpp>
 
 using namespace std;
+#include <sstream>
 
 #define INDEX_FOREACH(index, a, b)                                             \
   for (unsigned int index = static_cast<unsigned int>(-1);                     \
@@ -256,6 +257,7 @@ int dbSaveBlock(const CBlockIndex *blockindex, CBlock &block) {
   int blk_id = -1;
   int pool_id = POOL_UNKNOWN;
   int poolBip = BIP_DEFAULT;
+  std::map<int , int > idmap;
 
    /*
   * For these case:
@@ -265,60 +267,71 @@ int dbSaveBlock(const CBlockIndex *blockindex, CBlock &block) {
   if (dbSync(height)==-1)
      return -1;
  
-  if (dbSrv.db_ops->begin() == -1) {
-    LogPrint("dblayer", "block save first roll back height: %d \n", height);
-    goto rollback;
-  }
-
   poolBip = getPoolSupportBip(&block.vtx[0].vin[0].scriptSig[0], block.vtx[0].vin[0].scriptSig.size(), version);
   pool_id = getPoolId(block.vtx[0]);
+
+  block.vtx[0].nTimeReceived = time;
+  INDEX_FOREACH(idx, const CTransaction & tx, block.vtx) {
+
+      if (dbSrv.db_ops->begin() == -1) {
+          LogPrint("dblayer", "dbAcceptTx roll back: %s \n", tx.GetHash().ToString());
+          dbSrv.db_ops->rollback();
+          return -1;
+      }
+
+      int tx_id = dbSaveTx(tx);
+      if (tx_id == -1) {
+          LogPrint("dblayer", "tx save fail block height: %d,  txhash: %s \n",
+                   height, tx.GetHash().ToString());
+          dbSrv.db_ops->rollback();
+          return -1;
+      }
+
+      idmap.insert(std::pair<int,int>(tx_id,idx));
+
+      dbSrv.db_ops->commit();
+  }
+
+  if (dbSrv.db_ops->begin() == -1) {
+      LogPrint("dblayer", "block save fail height: %d \n", height);
+      dbSrv.db_ops->rollback();
+      return -1;
+  }
+
   blk_id = dbSrv.db_ops->save_blk(
       hash.begin(), height, version, prev_hash.begin(), mrkl_root.begin(), time,
       bits, nonce, blk_size, work.begin(), block.vtx.size(), pool_id, block.nTimeReceived, poolBip);
   if (blk_id == -1) {
-    dbSrv.db_ops->rollback();
-
-    if (dbSrv.db_ops->begin() == -1) {
-      LogPrint("dblayer", "block save second roll back height: %d \n", height);
-      goto rollback;
-    }
-    blk_id = dbSrv.db_ops->save_blk(
-        hash.begin(), height, version, prev_hash.begin(), mrkl_root.begin(),
-        time, bits, nonce, blk_size, work.begin(), block.vtx.size(), pool_id, block.nTimeReceived,poolBip);
-    if (blk_id == -1) {
+      dbSrv.db_ops->rollback();
       LogPrint("dblayer", "block save fail height: %d \n", height);
-      goto rollback;
-    }
+      return -1;
   }
 
-  block.vtx[0].nTimeReceived = time;
-  INDEX_FOREACH(idx, const CTransaction & tx, block.vtx) {
-    int tx_id = dbSaveTx(tx);
-    if (tx_id == -1) {
-        LogPrint("dblayer", "tx save fail block height: %d,  txhash: %s \n",
-               height, tx.GetHash().ToString());
-        goto rollback;
-    }
-    if (dbSrv.db_ops->save_blk_tx(blk_id, tx_id, idx)==-1) {
-        LogPrint("dblayer", "blk_tx save fail block : %d,  txhash: %s \n",
-               height, tx.GetHash().ToString());
-        goto rollback;
-        }
+  
+  std::map<int,int>::iterator it;
+  std::string sdata;
+
+  sdata.clear();
+  for (it=idmap.begin(); it!=idmap.end(); ++it) {
+      sdata = sdata + strprintf("%d,%d,%d\n", blk_id, it->first, it->second);
+  }
+
+  if (dbSrv.db_ops->save_multi_blk_tx(sdata.c_str())==-1) {
+      LogPrint("dblayer", "bat_save_blk_tx save fail block : %d,  txhash: %s \n",
+               height, sdata.c_str());
+      dbSrv.db_ops->rollback();
+      return -1;
   }
 
   if (dbSrv.db_ops->add_blk_statics(blk_id) == -1) {
       LogPrint("dblayer", "add_blk_statics fail block : %d\n", height);
-        goto rollback;
+        dbSrv.db_ops->rollback();
+        return -1;
         }
 
   dbSrv.db_ops->commit();
 
   return 0;
-
-rollback:
-
-  dbSrv.db_ops->rollback();
-  return -1;
 
 }
 
