@@ -55,6 +55,8 @@ public:
         nTime = 0;
         nBits = 0;
         nNonce = 0;
+        nTimeReceived = 0;
+        relayIp.clear();
     }
 
     bool IsNull() const
