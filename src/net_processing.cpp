@@ -1782,7 +1782,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         CTransactionRef ptx;
         vRecv >> ptx;
         CTransaction tx = *ptx;
-        tx.nTimeReceived = nTimeReceived/1000000;
+        tx.nTimeReceived = nTimeReceived;
         tx.relayIp = pfrom->addr.ToString();
 
         CInv inv(MSG_TX, tx.GetHash());
@@ -2371,9 +2371,10 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
     {
         std::shared_ptr<CBlock> pblock = std::make_shared<CBlock>();
         vRecv >> *pblock;
-        pblock->nTimeReceived = nTimeReceived/1000000;
+        pblock->nTimeReceived = nTimeReceived;
         pblock->relayIp = pfrom->addr.ToString();
-        pblock->vtx[0]->nTimeReceived = pblock->nTime;
+        CTransaction *tx = (CTransaction *)pblock->vtx[0].get();
+        tx->nTimeReceived = pblock->nTime;
 
         LogPrint("net", "received block %s peer=%d\n", pblock->GetHash().ToString(), pfrom->id);
 
