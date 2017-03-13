@@ -33,6 +33,7 @@
 #include "txmempool.h"
 #include "dblayer.h"
 #include "pool.h"
+#include "utilstrencodings.h"
 
 #include <boost/foreach.hpp>
 
@@ -58,6 +59,9 @@ struct DBSERVER dbSrv = {
   .db_conn = NULL,
 };
 
+
+//current block height
+static int maxHeight = 0;
 
 int  getPoolId(const CTransaction &tx) {
 
@@ -241,6 +245,14 @@ int dbSaveBlock(const CBlockIndex *blockindex, CBlock &block) {
   if (!GetArg("-savetodb", false))
       return 0;
 
+  /*
+  * For these case:
+  * 1. when db reconnect 
+  * 2. multi node or thread insert db 
+  */
+  if (dbSync(blockindex->nHeight)==-1)
+     return -1;
+
   uint256 hash = block.GetHash();
   uint256 prev_hash;
 
@@ -269,14 +281,6 @@ int dbSaveBlock(const CBlockIndex *blockindex, CBlock &block) {
   int pool_id = POOL_UNKNOWN;
   int poolBip = BIP_DEFAULT;
 
-   /*
-  * For these case:
-  * 1. when db reconnect 
-  * 2. multi node or thread insert db 
-  */
-  if (dbSync(height)==-1)
-     return -1;
- 
   if (dbSrv.db_ops->begin() == -1) {
     LogPrint("dblayer", "block save first roll back height: %d \n", height);
     goto rollback;
@@ -323,6 +327,8 @@ int dbSaveBlock(const CBlockIndex *blockindex, CBlock &block) {
         }
 
   dbSrv.db_ops->commit();
+
+  maxHeight = height;
 
   return 0;
 
@@ -541,7 +547,21 @@ int dbSync(int newHeight) {
   CBlock block;
   CBlockIndex *pblockindex;
   static bool syncing=false;
-  int maxHeight = 0;
+
+  //CTransaction tx;
+  //CDataStream stream(ParseHex("0b0ef3825c5ff5ebd510aeae9a8ad7608ca8fbd7214c9674b4f30f0039e96f29"), SER_NETWORK, PROTOCOL_VERSION);
+  //stream >> tx;
+
+  //uint256 hash ;
+  //hash.SetHex("0b0ef3825c5ff5ebd510aeae9a8ad7608ca8fbd7214c9674b4f30f0039e96f29");
+  //CTransactionRef tx;
+  //uint256 hashBlock;
+  //GetTransaction(hash, tx, Params().GetConsensus(), hashBlock, true);
+ 
+  //dbSaveTx(*tx);
+
+  if (newHeight<=(maxHeight+1)) return 0; 
+  //if (newHeight<=maxHeight) return 0; 
 
   if (syncing) return 0;
 
@@ -549,23 +569,29 @@ int dbSync(int newHeight) {
 
   if (!dbSrv.db_ops->connected()) {
         syncing=false;
-        return 0;
+        return -1;
   }
 
   maxHeight = dbSrv.db_ops->query_maxHeight();
-  //if (maxHeight == -1) //first sync
-  //      maxHeight = 0;
+
+  //if (maxHeight==0)
+  //    {
+  //    maxHeight = dbSrv.db_ops->query_maxHeight();
+  //    //if (maxHeight == -1) //first sync
+  //    // maxHeight = 0;
+  //    }
+
+  //if (maxHeight + 1 == newHeight)
+  //{
+  //  syncing=false;
+  //  return -1;
+  //}
+ 
 
   bool liteDb = GetArg("-litedb", false);
   if (liteDb) {
       int liteHeight = GetArg("-liteheight", 0);
       maxHeight = (maxHeight>liteHeight) ? maxHeight:liteHeight;
-  }
-
-  if (maxHeight + 1 == newHeight)
-  {
-    syncing=false;
-    return 0;
   }
 
   // syndb
@@ -594,6 +620,7 @@ int dbSync(int newHeight) {
       LogPrint("dblayer", "- Save block to db: %.2fms height %d\n",
                (GetTimeMicros() - nStart) * 0.001, pblockindex->nHeight);
     }
+    maxHeight = i;
   }
 
   syncing=false;
