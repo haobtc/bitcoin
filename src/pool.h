@@ -92,11 +92,22 @@ enum POOL_TYPE {
     POOL_EOBOT= 115, //http://eobot.com
     POOL_1HASH = 116,   //https://www.1hash.com/
     POOL_UNOMP = 117,   //http://199.115.116.7:8925/
-    POOL_PATELSMINING= 118,   //http://patelsminingpool.com/"
-    POOL_HAOBTC= 119,   //http://haobtc.com/"
-    POOL_VIABTC= 120,   //http://6Yviabtc.com/"
-    POOL_BITCOIN_INDIA= 121,   //http://bitcoin-india.org/"
-    POOL_BITCOIN_COM = 122,   //http://www.bitcoin.com/"
+    POOL_PATELSMINING= 118,   //http://patelsminingpool.com/
+    POOL_HAOBTC= 119,   //http://haobtc.com/
+    POOL_VIABTC= 120,   //http://6Yviabtc.com/
+    POOL_BITCOIN_INDIA= 121,   //http://bitcoin-india.org/
+    POOL_BITCOIN_COM = 122,   //http://www.bitcoin.com/
+    POOL_SHAWNP0WERS = 123,   //http://www.brainofshawn.com/
+    POOL_BTC_TOP = 124,   //http://www.btc.top/
+    POOL_CONNECTBTC = 125,   //http://www.ConnectBTC.com/
+    POOL_BATPOOL = 126,   //http://www.BATPOOL.com/
+    POOL_CANOE = 127,   //http://www.canoepool.com/
+    POOL_RIGPOOL = 128,   //http://www.rigpool.com/
+    POOL_BIXIN = 129,   //https://bixin.com/common/pool_landing
+    POOL_PHASH = 130,   //https://phash.io/
+    POOL_BTC_COM = 131,   //https://pool.btc.com/
+    POOL_EKANEMBTC = 132,   //https://ekanembtc.com/
+    POOL_GOGREENLIGHT = 133,   //http://www.gogreenlight.se
 };
  
 enum BIP_TYPE {
@@ -113,5 +124,4 @@ enum BIP_TYPE {
  
 int getPoolIdByPrefix(const unsigned char *coinbase, int coinbaseLen);
 int getPoolIdByAddr(const char *addr);
-int getPoolSupportBip(const unsigned char *coinbase, int coinbaseLen, int version);
-
+int getPoolSupportBip(const unsigned char *coinbase, int coinbaseLen, int version); 
