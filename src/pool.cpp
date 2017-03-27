@@ -257,6 +257,7 @@ static struct PoolPrefix poolPrefixes[] = {
 
 static struct bipPrefix bipPrefixes[] = {
     {"EB1/AD6", BIP_BU},
+    {"BIP148", BIP_148},
     {"8M", BIP_8M},
     {"/BIP100/", BIP_100},
     {"/BIP248/", BIP_248}

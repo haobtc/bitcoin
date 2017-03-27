@@ -124,6 +124,7 @@ enum BIP_TYPE {
     BIP_SW=0x100,
     BIP_BU=0x200,
     BIP_UASF=0x400,
+    BIP_148=0x800, //UASF
 };
  
 int getPoolIdByPrefix(const unsigned char *coinbase, int coinbaseLen);
