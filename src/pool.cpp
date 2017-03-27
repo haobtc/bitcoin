@@ -256,6 +256,7 @@ static struct PoolPrefix poolPrefixes[] = {
 };
 
 static struct bipPrefix bipPrefixes[] = {
+    {"EB1/AD6", BIP_BU},
     {"8M", BIP_8M},
     {"/BIP100/", BIP_100},
     {"/BIP248/", BIP_248}
@@ -302,22 +303,26 @@ int getPoolIdByAddr(const char *addr)
 
 int getPoolSupportBip(const unsigned char *coinbase, int coinbaseLen, int version)
 {
+    int ver = BIP_UNKNOWN;
     if (version == 0x20000000)
-        return  BIP_9;
+        ver &= BIP_9;
     if (version == 0x20000001)
-        return  BIP_CSV;
+        ver &= BIP_CSV;
+    if (version == 0x20000002)
+        ver = BIP_SW;
     if (version == 0x20000004)
-        return  BIP_101_8M;
+        ver &= BIP_101_8M;
     if (version == 0x20000008)
-        return  BIP_101_2M;
+        ver &= BIP_101_2M;
     if ((version & 0x30000000) == 0x30000000)
-        return  BIP_CLASSIC;
- 
+        ver &= BIP_CLASSIC;
+
     for (size_t i = 0; i < (sizeof(bipPrefixes) / sizeof(bipPrefixes[0])); ++i) {
         if (strMatch(bipPrefixes[i].prefix, coinbase, coinbaseLen) != 0) {
             //LogPrint("dblayer", "mined by pool %s\n", poolPrefixes[i].prefix);
-            return  bipPrefixes[i].bipType;
+            ver &= bipPrefixes[i].bipType;
         }
     }
-    return 0;
+
+    return  ver;
 }

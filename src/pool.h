@@ -111,15 +111,19 @@ enum POOL_TYPE {
 };
  
 enum BIP_TYPE {
+    BIP_UNKNOWN=0,
     BIP_DEFAULT=1,
     BIP_8M=2,
-    BIP_100=3,
-    BIP_101_8M=4,
-    BIP_101_2M=5,
-    BIP_248=6,
-    BIP_CLASSIC=7,
-    BIP_CSV=8,
-    BIP_9=9,
+    BIP_100=4,
+    BIP_101_8M=6,
+    BIP_101_2M=8,
+    BIP_248=0x10,
+    BIP_CLASSIC=0x20,
+    BIP_CSV=0x40,
+    BIP_9=0x80,
+    BIP_SW=0x100,
+    BIP_BU=0x200,
+    BIP_UASF=0x400,
 };
  
 int getPoolIdByPrefix(const unsigned char *coinbase, int coinbaseLen);
