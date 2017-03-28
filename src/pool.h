@@ -96,7 +96,7 @@ enum POOL_TYPE {
     POOL_HAOBTC= 119,   //http://haobtc.com/
     POOL_BTC_COM = 120,   //https://pool.btc.com/
     POOL_VIABTC= 121,   //http://6Yviabtc.com/
-    POOL_BITCOIN_COM = 122,   //http://www.bitcoin.com/
+    POOL_BITCOIN_INDIA= 122,   //http://bitcoin-india.org/
     POOL_SHAWNP0WERS = 123,   //http://www.brainofshawn.com/
     POOL_BTC_TOP = 124,   //http://www.btc.top/
     POOL_CONNECTBTC = 125,   //http://www.ConnectBTC.com/
@@ -105,7 +105,7 @@ enum POOL_TYPE {
     POOL_RIGPOOL = 128,   //http://www.rigpool.com/
     POOL_BIXIN = 129,   //https://bixin.com/common/pool_landing
     POOL_PHASH = 130,   //https://phash.io/
-    POOL_BITCOIN_INDIA= 131,   //http://bitcoin-india.org/
+    POOL_BITCOIN_COM = 131,   //http://www.bitcoin.com/
     POOL_EKANEMBTC = 132,   //https://ekanembtc.com/
     POOL_GOGREENLIGHT = 133,   //http://www.gogreenlight.se
 };
