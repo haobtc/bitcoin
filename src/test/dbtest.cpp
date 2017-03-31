@@ -12,7 +12,6 @@
 #include "core_io.h"
 #include "key.h"
 #include "keystore.h"
-#include "main.h" // For CheckTransaction
 #include "policy/policy.h"
 #include "script/script.h"
 #include "script/sign.h"
@@ -91,7 +90,25 @@ BOOST_AUTO_TEST_CASE(test_save_blk)
       //pblockindex = pblockindex->pprev; 
   }
 
-  dbClose();
+}
+
+
+BOOST_AUTO_TEST_CASE(test_tx_remove)
+{
+  //CTransaction tx;
+  CMutableTransaction mtx;
+  const std::string  stx = "0100000001cff3b2773f382c7c801dc9efd0eebff3005ccf381b7563ed7419a1addba23ea500000000fdfe00004830450221009ac49d6ebaa6629d9e42702b2aeb276f07188323e1e04b068cd1c456b79ad66a022012e6f22c456f3247034cc101b8919027f317dcef73eaf2dac17dc4f62ac2e91401483045022100f2e6d941131d2cb8a6646f4ac4cc279902bcf7313c1bdb0894fba2e21752d18d02200827f219104a1211f33f89117b2127c749df8060e935b953056a2ef359451874014c69522102d100fca3227e5bb2a718a4b3ab7065f8387d6cb718cf7349b5cd8e703478ba992102bbd58727664a2f3dc59065b406009705eb502b2aebb9c95ed3e190bfaf30639221029eb3c09aee62fa2c291a144c0ba588c8d1e74ba2f66a6549975190bea91e3e2853aeffffffff02402c4206000000001976a914febfd47ff18d35677ad386c2a1d33c2f494ecf7688acf0c323050000000017a914892bc87c69a3c1220640eb8f164ab93117fbcbc78700000000";
+
+  if (!DecodeHexTx(mtx, stx, true))
+        BOOST_ERROR("TX decode failed");
+
+  CTransaction tx = CTransaction(std::move(mtx));
+ 
+
+  if (dbRemoveTx(tx.GetHash()) == -1) { 
+        BOOST_ERROR("Bad test: " << tx.GetHash().begin());
+
+  }
 
 }
 

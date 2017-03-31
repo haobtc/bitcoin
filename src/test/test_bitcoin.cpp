@@ -100,6 +100,8 @@ TestingSetup::~TestingSetup()
         delete pcoinsdbview;
         delete pblocktree;
         boost::filesystem::remove_all(pathTemp);
+
+        dbClose();
 }
 
 TestChain100Setup::TestChain100Setup() : TestingSetup(CBaseChainParams::REGTEST)
