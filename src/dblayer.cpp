@@ -84,14 +84,14 @@ int  getPoolId(const CTransaction &tx) {
             int nRequired;
  
             if (!ExtractDestinations(txout.scriptPubKey, txout_type, addresses, nRequired))
-                 return -1;
+                 return id;
 
             BOOST_FOREACH(const CTxDestination & dest, addresses) {
                 if (boost::get<CNoDestination>(&dest))
                     continue;
                 CBitcoinAddress addr(dest);
                 id = getPoolIdByAddr(addr.ToString().c_str());
-                if (id != -1)
+                if (id != 0)
                    return id;
                 }
             }
