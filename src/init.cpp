@@ -1525,7 +1525,23 @@ bool AppInitMain(boost::thread_group& threadGroup, CScheduler& scheduler)
                 }
 
 
+                if  (GetArg("-savetodb", false)) 
+                    {
+                    uiInterface.InitMessage(_("dbSync begin..."));
+                    bool deleteallutx = GetArg("-deleteallutx", true);
+                    if  (deleteallutx) {
+                        if (dbDeleteAllUtx() == -1) {
+                            strLoadError = _("Error delete all utx from database...");
+                            break;
+                        }
+                    }
 
+                    if (dbSync(0) == -1) {
+                        strLoadError = _("Error sql database sync...");
+                        break;
+                    }
+                    uiInterface.InitMessage(_("dbSync end..."));
+                    }
             } catch (const std::exception& e) {
                 if (fDebug) LogPrintf("%s\n", e.what());
                 strLoadError = _("Error opening block database");
@@ -1644,24 +1660,6 @@ bool AppInitMain(boost::thread_group& threadGroup, CScheduler& scheduler)
     //// debug print
     LogPrintf("mapBlockIndex.size() = %u\n",   mapBlockIndex.size());
     LogPrintf("nBestHeight = %d\n",                   chainActive.Height());
-
-    //// sync database
-    if  (GetArg("-savetodb", false)) 
-       {
-       uiInterface.InitMessage(_("dbSync begin..."));
-       bool deleteallutx = GetArg("-deleteallutx", true);
-       if  (deleteallutx) {
-           if (dbDeleteAllUtx() == -1) {
-               return InitError("Error delete all utx from database...");
-           }
-       }
-
-       if (dbSync(0) == -1) {
-           return InitError("Error sql database sync...");
-       }
-       uiInterface.InitMessage(_("dbSync end..."));
-       } 
-
     if (GetBoolArg("-listenonion", DEFAULT_LISTEN_ONION))
         StartTorControl(threadGroup, scheduler);
 
