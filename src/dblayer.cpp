@@ -69,7 +69,7 @@ int  getPoolId(const CTransaction &tx) {
     int id = -1;
 
     id = getPoolIdByPrefix(&tx.vin[0].scriptSig[0], tx.vin[0].scriptSig.size());
-    if (id == -1) {
+    if (id == 0) {
         // as p2pool
         if ((tx.vin[0].scriptSig.size() == 4) && (tx.vout.size()>3)) 
             return POOL_P2POOL;
