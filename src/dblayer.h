@@ -89,7 +89,7 @@ int  dbRemoveTx(uint256 txhash);
 int  dbSync(int newHeight);
 int  dbDeleteAllUtx();
 int  dbFilterTx(uint256 &hash );
-
+int  getPoolId(const CTransaction &tx);
 
 extern int getTxMetaType(const CTransaction &tx);
 

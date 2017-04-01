@@ -20,6 +20,7 @@
 #include "utilstrencodings.h"
 #include "chainparams.h"
 #include "dblayer.h"
+#include "pool.h"
 
 #include <map>
 #include <string>
@@ -41,6 +42,7 @@ typedef vector<unsigned char> valtype;
 extern UniValue read_json(const std::string& jsondata);
 
 BOOST_FIXTURE_TEST_SUITE(db_tests, TestingSetup)
+
 BOOST_AUTO_TEST_CASE(test_save_blk)
 {
   int i = 0;
@@ -109,6 +111,34 @@ BOOST_AUTO_TEST_CASE(test_tx_remove)
         BOOST_ERROR("Bad test: " << tx.GetHash().begin());
 
   }
+
+}
+
+BOOST_AUTO_TEST_CASE(test_poolinfo)
+{
+  //CTransaction tx;
+  CMutableTransaction mtx;
+  const std::string  stx= "00000000000000000000000000000000000000000000000000000000000000000000000001ffffffff6403410407362f454232352f414432332f384d2f22afdca2e562b434edb3c8d67a81d930cce97687c6fae97b7248889296341c7602000000f09f909f134d696e65642062792077696e6a69616e6a756e00000000000000000000000000000000000000000098e2719c0232be3a56000000001976a914c825a1ecf2a6830c4401620c3a16f1995057c2ab88ac00000000000000002f6a24aa21a9eddac81849576b43344bbfb311730a70a394d7217aa2278c3a3bec04b0a68ac5280800000000000000004f254a3c";
+
+  const std::string  coinbase= "03410407362f454232352f414432332f384d2f22afdca2e562b434edb3c8d67a81d930cce97687c6fae97b7248889296341c7602000000f09f909f134d696e65642062792077696e6a69616e6a756e000000000000000000000000000000000000000000";
+
+  const std::string  addr = "1F1xcRt8H8Wa623KqmkEontwAAVqDSAWCV";
+  int id = 0;
+
+  id = getPoolIdByPrefix((const unsigned char*)coinbase.c_str(), coinbase.size());
+  BOOST_CHECK(id == POOL_1HASH);
+  printf("id=%d, 1hash=%d", id, POOL_1HASH);
+
+  id = getPoolIdByAddr((const char*)addr.c_str());
+  BOOST_CHECK(id == POOL_1HASH);
+  printf("id=%d, 1hash=%d", id, POOL_1HASH);
+
+  if (!DecodeHexTx(mtx, stx, true))
+        BOOST_ERROR("TX decode failed");
+
+  CTransaction tx = CTransaction(std::move(mtx));                                                                                                           
+
+  getPoolId(tx);
 
 }
 
