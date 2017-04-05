@@ -36,7 +36,7 @@
 
 #define PGOK(_res)                                                             \
   ((_res) == PGRES_COMMAND_OK || (_res) == PGRES_TUPLES_OK ||                  \
-   (_res) == PGRES_EMPTY_QUERY || (_res) ==  PGRES_COPY_IN)
+   (_res) == PGRES_EMPTY_QUERY)
 
 #define WHERE_FFL " - from %s %s() line %d"
 #define WHERE_FFL_PASS __FILE__, __func__, __LINE__
@@ -654,11 +654,10 @@ static int pg_save_blk(unsigned char *hash, int height, int version,
   const char *paramvalues[15];
 
   // check if block in database
-  id = pg_query_blk(hash);
-  if ( id > 0) {
+  if (pg_query_blk(hash) > 0) {
     LogPrint("dblayer", "pg_save_blk : block %d exists in database.\n", height);
     pg_readd_blk(hash);
-    return id;
+    return -1;
   }
 
   /* PG does a fine job with timestamps so we won't bother. */
@@ -728,45 +727,6 @@ int pg_save_blk_tx(int blk_id, int tx_id, int idx) {
   PQclear(res);
   return 0;
 }
-
-int pg_save_multi_blk_tx(const char *data) {
-  PGresult *res;
-  ExecStatusType rescode;
-  int copy_result = 0;
-
-  res = PQexec((PGconn *)dbSrv.db_conn, "COPY blk_tx (blk_id, tx_id, idx) FROM stdin DELIMITER ',';");
-
-  /*  can be call repeatedly */ 
-
-  copy_result = PQputCopyData((PGconn *)dbSrv.db_conn, data, strlen(data));
-  if (copy_result != 1)
-      {
-      LogPrint("dblayer", "Copy to target table failed: %s\n",
-              PQerrorMessage((PGconn *)dbSrv.db_conn));
-      PQclear(res);
-      return -1;
-      }
-  
-  if (PQputCopyEnd((PGconn *)dbSrv.db_conn, NULL) == -1)
-      {
-      LogPrint("dblayer", "Copy to target table failed: %s\n",
-               PQerrorMessage((PGconn *)dbSrv.db_conn));
-      PQclear(res);
-      return -1;
-      }
-
-  rescode = PQresultStatus(res);
-  if (!PGOK(rescode)) {
-    LogPrint("dblayer", "pg_save_multi_blk_tx failed: %s",
-             PQerrorMessage((const PGconn *)dbSrv.db_conn));
-    PQclear(res);
-    return -1;
-  }
-
-  PQclear(res);
-  return 0;
-}
- 
 
 int pg_save_tx(unsigned char *hash, int version, int lock_time, bool coinbase,
                int tx_size, long long recv_time, const char *ip, 
@@ -1259,7 +1219,6 @@ struct SERVER_DB_OPS postgresql_db_ops = {
   .add_blk_statics = pg_add_blk_statics,
   .add_tx_statics = pg_add_tx_statics,
   .save_blk_tx = pg_save_blk_tx,
-  .save_multi_blk_tx = pg_save_multi_blk_tx,
   .save_tx = pg_save_tx,
   .readd_tx = pg_readd_tx,
   .save_utx = pg_save_utx,
