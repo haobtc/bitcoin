@@ -165,6 +165,7 @@ static struct PoolPrefix poolPrefixes[] = {
     {"Made in China", POOL_F2POOL},
     {"Mined by user", POOL_F2POOL},
     {"For Pierce and Paul",POOL_F2POOL},
+    {"mined by gbminers",POOL_GBMINERS},
     {"viabtc.com", POOL_VIABTC},
     {"/ViaBTC/", POOL_VIABTC},
     {"viabtc.com deploy", POOL_VIABTC},

@@ -108,6 +108,7 @@ enum POOL_TYPE {
     POOL_BITCOIN_COM = 131,   //http://www.bitcoin.com/
     POOL_EKANEMBTC = 132,   //https://ekanembtc.com/
     POOL_GOGREENLIGHT = 133,   //http://www.gogreenlight.se
+    POOL_GBMINERS = 134,   //http://gbminers.com/
 };
  
 enum BIP_TYPE {
