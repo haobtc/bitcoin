@@ -310,22 +310,22 @@ int getPoolSupportBip(const unsigned char *coinbase, int coinbaseLen, int versio
 {
     int ver = BIP_UNKNOWN;
     if (version == 0x20000000)
-        ver &= BIP_9;
+        ver |= BIP_9;
     if (version == 0x20000001)
-        ver &= BIP_CSV;
+        ver |= BIP_CSV;
     if (version == 0x20000002)
-        ver = BIP_SW;
+        ver |= BIP_SW;
     if (version == 0x20000004)
-        ver &= BIP_101_8M;
+        ver |= BIP_101_8M;
     if (version == 0x20000008)
-        ver &= BIP_101_2M;
+        ver |= BIP_101_2M;
     if ((version & 0x30000000) == 0x30000000)
-        ver &= BIP_CLASSIC;
+        ver |= BIP_CLASSIC;
 
     for (size_t i = 0; i < (sizeof(bipPrefixes) / sizeof(bipPrefixes[0])); ++i) {
         if (strMatch(bipPrefixes[i].prefix, coinbase, coinbaseLen) != 0) {
             //LogPrint("dblayer", "mined by pool %s\n", poolPrefixes[i].prefix);
-            ver &= bipPrefixes[i].bipType;
+            ver |= bipPrefixes[i].bipType;
         }
     }
 
