@@ -142,4 +142,32 @@ BOOST_AUTO_TEST_CASE(test_poolinfo)
 
 }
 
+BOOST_AUTO_TEST_CASE(test_poolbip)
+{
+    std::vector<unsigned char>   coinbase= ParseHex("03410407362f454232352f414432332f384d2f22afdca2e562b434edb3c8d67a81d930cce97687c6fae97b7248889296341c7602000000f09f909f134d696e65642062792077696e6a69616e6a756e000000000000000000000000000000000000000000");
+
+  std::vector<unsigned char>  bucoinbase= ParseHex("03e30707244d696e656420627920416e74506f6f6c20626a31352f4542312f4144362f422058e73996fabe6d6de96c37208654a8142735f2c2ef61afea04e414d8f2e980817448927a93639e1704000000000000002e000000aa7f0100");
+
+  int poolBip = 0;
+
+  //  if (version == 0x20000000)
+  //      ver &= BIP_9;
+  //  if (version == 0x20000001)
+  //      ver &= BIP_CSV;
+  //  if (version == 0x20000002)
+  //      ver &= BIP_SW;
+  //  if (version == 0x20000004)
+  //      ver &= BIP_101_8M;
+  //  if (version == 0x20000008)
+  //      ver &= BIP_101_2M;
+  //  if ((version & 0x30000000) == 0x30000000)
+  //      ver &= BIP_CLASSIC;
+ 
+  poolBip = getPoolSupportBip((const unsigned char*)&coinbase[0], coinbase.size(), 0x20000002);
+  BOOST_CHECK(poolBip  == BIP_SW);
+
+  poolBip = getPoolSupportBip((const unsigned char*)&bucoinbase[0], bucoinbase.size(), 0x20000000);
+  BOOST_CHECK(poolBip  == BIP_BU);
+}
+
 BOOST_AUTO_TEST_SUITE_END() 
