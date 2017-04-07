@@ -314,7 +314,7 @@ int getPoolSupportBip(const unsigned char *coinbase, int coinbaseLen, int versio
     if (version == 0x20000001)
         ver &= BIP_CSV;
     if (version == 0x20000002)
-        ver = BIP_SW;
+        ver &= BIP_SW;
     if (version == 0x20000004)
         ver &= BIP_101_8M;
     if (version == 0x20000008)
