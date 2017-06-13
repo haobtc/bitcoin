@@ -571,7 +571,7 @@ void CTxMemPool::removeForReorg(const CCoinsViewCache *pcoins, unsigned int nMem
     for (txiter it : txToRemove) {
         CalculateDescendants(it, setAllRemoves);
     }
-    RemoveStaged(setAllRemoves, false, MemPoolRemovalReason::REORG);
+    RemoveStaged(setAllRemoves, false, MemPoolRemovalReason::REORG, true);
 }
 
 void CTxMemPool::removeConflicts(const CTransaction &tx)
