@@ -102,6 +102,7 @@ typedef struct timeval tv_t;
 
 #define DEFAULT_SAVE_UTX "INSERT INTO utx (id) values ($1);"
 
+#define DEFAULT_SAVE_TXIN                                                      \
   "insert into txin (tx_id, tx_idx, prev_out_index, sequence, script_sig, prev_out, witness) \
       values($1,$2,$3,$4,$5::bytea,$6::bytea, $7::bytea)  RETURNING id"
 
@@ -1107,7 +1108,6 @@ static int pg_delete_all_utx() {
   LogPrint("dblayer", "Delete all utx finished.\n");
 
   return 0;
->>>>>>> 0.14_db
 }
 
 static bool pg_query_addr_out(int addr_id, int txout_id) {
