@@ -28,7 +28,7 @@ struct SERVER_DB_OPS {
   int (*save_blk)(unsigned char *hash, int height, int version,
                   unsigned char *prev_hash, unsigned char *mrkl_root,
                   long long time, int bits, unsigned int nonce, int blk_size,
-                  unsigned char *work, int txnum, int pool_id, long long recv_time, int pool_bip);
+                  unsigned char *work, int txnum, int pool_id, long long recv_time, int pool_bip, const char *ip);
 
   int (*delete_blk)(const unsigned char *hash);
   int (*add_blk_statics)(int blkid);
@@ -37,17 +37,21 @@ struct SERVER_DB_OPS {
   int (*save_blk_tx)(int blk_id, int tx_id, int idx);
   int (*save_tx)(unsigned char *hash, int version, int lock_time, bool coinbase,
                  int tx_size,  long long recv_time,
-                 const char *ip);
+                 const char *ip, unsigned char* wtxid, int wsize, int vsize);
+  int (*readd_tx)(int txId);
   int (*save_utx)(int txid);
   int (*save_txin)(int tx_id, int tx_idx, int prev_out_index, unsigned int sequence,
                    const unsigned char *script_sig, int script_len,
-                   const unsigned char *prev_out);
+                   const unsigned char *prev_out, const unsigned char *witness, int witness_len);
   int (*save_txout)(int tx_id, int idx, const unsigned char *scriptPubKey,
                     int script_len, long long nValue, int txout_type);
   int (*save_addr)(const char *addr, const char *hash160);
   int (*save_addr_out)(int addr_id, int txout_id);
+  int (*empty_mempool)();
+  int (*save_mempool)(int, unsigned char *, double, long long, long long, int, long long, int, bool, int, long long, int,int, bool,long long,long long,long long,bool);
 
   int (*query_tx)(const unsigned char *hash);
+  int (*query_filter_tx)(const unsigned char *hash);
   int (*delete_tx)(int txid);
   int (*delete_all_utx)();
 
@@ -58,6 +62,7 @@ struct SERVER_DB_OPS {
   void (*commit)(void);
   bool (*open)(void);
   void (*close)(void);
+  bool (*connected)(void);
 };
 
 enum SERVER_DB_ENGINE {
@@ -82,6 +87,8 @@ int  dbAcceptTx(const CTransaction &tx);
 int  dbRemoveTx(uint256 txhash);
 int  dbSync(int newHeight);
 int  dbDeleteAllUtx();
+int  dbFilterTx(uint256 &hash );
+int  getPoolId(const CTransaction &tx);
 
 #ifdef HAVE_SQLITE3
 extern struct SERVER_DB_OPS sqlite_db_ops;

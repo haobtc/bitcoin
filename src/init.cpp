@@ -505,12 +505,17 @@ std::string HelpMessage(HelpMessageMode mode)
     }
 
     strUsage += "\n" + _("database options:") + "\n";
+    strUsage += "  -savetodb=<true>\n";
     strUsage += "  -dbname=<database name>\n";
     strUsage += "  -dbhost=<host>\n";
     strUsage += "  -dbport=<port>\n";
     strUsage += "  -dbuser=<username>\n";
     strUsage += "  -dbpass=<password>\n";
     strUsage += "  -deleteallutx=<true>\n";
+    strUsage += "  -savemempool=<true>\n";
+    strUsage += "  -filtertx=<true>\n";
+    strUsage += "  -litedb=<false>\n";
+    strUsage += "  -liteheight=<0>\n";
     return strUsage;
 }
 
@@ -1236,6 +1241,13 @@ bool AppInitMain(boost::thread_group& threadGroup, CScheduler& scheduler)
 
     peerLogic.reset(new PeerLogicValidation(&connman));
     RegisterValidationInterface(peerLogic.get());
+     if  (GetArg("-savetodb", false)) {
+        uiInterface.InitMessage(_("dbOpen begin..."));
+        if (!dbOpen())
+            return InitError(_("Error connect database fail!"));
+        uiInterface.InitMessage(_("dbOpen end..."));
+        }
+ 
     RegisterNodeSignals(GetNodeSignals());
 
     // sanitize comments per BIP-0014, format user agent and check total size
@@ -1517,21 +1529,24 @@ bool AppInitMain(boost::thread_group& threadGroup, CScheduler& scheduler)
                     break;
                 }
 
-                uiInterface.InitMessage(_("dbSync begin..."));
 
-                bool deleteallutx = GetArg("-deleteallutx", true);
-                if  (deleteallutx) {
-                    if (dbDeleteAllUtx() == -1) {
-                        strLoadError = _("Error delete all utx from database...");
+                if  (GetArg("-savetodb", false)) 
+                    {
+                    uiInterface.InitMessage(_("dbSync begin..."));
+                    bool deleteallutx = GetArg("-deleteallutx", true);
+                    if  (deleteallutx) {
+                        if (dbDeleteAllUtx() == -1) {
+                            strLoadError = _("Error delete all utx from database...");
+                            break;
+                        }
+                    }
+
+                    if (dbSync(0) == -1) {
+                        strLoadError = _("Error sql database sync...");
                         break;
                     }
-                }
-
-                if (dbSync(0) == -1) {
-                    strLoadError = _("Error sql database sync...");
-                    break;
-                }
-                uiInterface.InitMessage(_("dbSync end..."));
+                    uiInterface.InitMessage(_("dbSync end..."));
+                    }
             } catch (const std::exception& e) {
                 if (fDebug) LogPrintf("%s\n", e.what());
                 strLoadError = _("Error opening block database");
