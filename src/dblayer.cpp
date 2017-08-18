@@ -434,9 +434,10 @@ int dbSync(int newHeight) {
   CBlock block;
   CBlockIndex *pblockindex;
   static bool syncing=false;
+  int currentHeight = 0; 
 
 
-  if (newHeight<=(maxHeight+1)) return 0; 
+  if ((newHeight <= (maxHeight+1)) && (maxHeight != 0)) return 0; 
 
   if (syncing) return 0;
 
@@ -455,9 +456,11 @@ int dbSync(int newHeight) {
       maxHeight = (maxHeight>liteHeight) ? maxHeight:liteHeight;
   }
 
+  currentHeight  =  maxHeight ? 0: maxHeight; 
+
   // syndb
-  if (maxHeight < chainActive.Height()) {
-    for (i = maxHeight + 1; i < (chainActive.Height() + 1); i++) {
+  if (currentHeight < chainActive.Height()) {
+    for (i = currentHeight; i < (chainActive.Height() + 1); i++) {
 
       if (ShutdownRequested()) {
         syncing=false;
@@ -481,7 +484,7 @@ int dbSync(int newHeight) {
       LogPrint("dblayer", "- Save block to db: %.2fms height %d\n",
                (GetTimeMicros() - nStart) * 0.001, pblockindex->nHeight);
     }
-    maxHeight = i;
+    currentHeight = i;
   }
 
   syncing=false;
