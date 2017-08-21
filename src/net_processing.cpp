@@ -2372,7 +2372,6 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         std::shared_ptr<CBlock> pblock = std::make_shared<CBlock>();
         vRecv >> *pblock;
         pblock->nTimeReceived = nTimeReceived;
-        pblock->relayIp = pfrom->addr.ToString();
         CTransaction *tx = (CTransaction *)pblock->vtx[0].get();
         tx->nTimeReceived = pblock->nTime;
 

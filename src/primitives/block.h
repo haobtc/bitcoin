@@ -28,7 +28,6 @@ public:
     uint32_t nBits;
     uint32_t nNonce;
     int64_t nTimeReceived;
-    std::string relayIp;
 
     CBlockHeader()
     {
@@ -56,7 +55,6 @@ public:
         nBits = 0;
         nNonce = 0;
         nTimeReceived = 0;
-        relayIp.clear();
     }
 
     bool IsNull() const
