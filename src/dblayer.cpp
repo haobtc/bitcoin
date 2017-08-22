@@ -456,7 +456,7 @@ int dbSync(int newHeight) {
       maxHeight = (maxHeight>liteHeight) ? maxHeight:liteHeight;
   }
 
-  currentHeight  =  maxHeight ? maxHeight : 0; 
+  currentHeight  =  maxHeight ? (maxHeight + 1) : 0; 
 
   // syndb
   if (currentHeight < chainActive.Height()) {
