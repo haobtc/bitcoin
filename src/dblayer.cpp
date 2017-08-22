@@ -232,7 +232,7 @@ int dbSaveTx(const CTransaction &tx) {
                                  out_value);
   }
   else if (tx_id > 0) {
-    dbSrv.db_ops->readd_tx(tx_id);
+    return tx_id;
   }
   else
     LogPrint("dblayer", "save tx fail : %d\n", tx_id);

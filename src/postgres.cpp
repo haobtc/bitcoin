@@ -87,9 +87,6 @@ typedef struct timeval tv_t;
   "insert into blk_tx (blk_id, tx_id, idx) \
     values($1,$2,$3)"
 
-#define DEFAULT_READD_BLK                                                       \
-  " select readd_blk ($1::bytea) "
-
 #define DEFAULT_SAVE_TX                                                        \
   "insert into tx (hash, version, lock_time, coinbase, tx_size, recv_time, ip, wtxid, wsize, vsize) \
     values($1::bytea,$2,$3,$4::boolean,$5,$6,$7, $8::bytea, $9, $10)  RETURNING id"
@@ -97,8 +94,6 @@ typedef struct timeval tv_t;
 #define DEFAULT_SAVE_MEMPOOL                                                   \
   "insert into mempool (tx_id , hash,  entryPriority , nFee , inChainInputValue  , nTxSize  , nTime  , entryHeight  , hadNoDependencies  , sigOpCount  , modifiedFee  , nModSize  , nUsageSize  , dirty  , nCountWithDescendants , nSizeWithDescendants  , nModFeesWithDescendants  , spendsCoinbase ) \
     values($1,$2::bytea,$3,$4,$5,$6,$7, $8,$9::boolean,$10,$11, $12,$13,$14::boolean,$15, $16,$17, $18::boolean)"
-
-#define DEFAULT_READD_TX "select readd_tx($1);"
 
 #define DEFAULT_SAVE_UTX "INSERT INTO utx (id) values ($1);"
 
@@ -810,35 +805,6 @@ int pg_save_mempool(int tx_id, unsigned char *hash, double priority, long long n
   return 0;
 }
 
-int pg_readd_tx(int txid) {
-  PGresult *res;
-  ExecStatusType rescode;
-  int i = 0;
-  const char *paramvalues[1];
-
-  /* PG does a fine job with timestamps so we won't bother. */
-
-  paramvalues[i++] = data_to_buf(TYPE_INT, (void *)(&txid), NULL, 0);
-
-  res = PQexecParams((PGconn *)dbSrv.db_conn, DEFAULT_READD_TX, i, NULL,
-                     paramvalues, NULL, NULL, PQ_WRITE);
-
-  free((char *)paramvalues[0]);
-
-  rescode = PQresultStatus(res);
-  if (!PGOK(rescode)) {
-    LogPrint("dblayer", "pg_readd_tx failed: %s",
-             PQerrorMessage((const PGconn *)dbSrv.db_conn));
-    PQclear(res);
-    return -1;
-  }
-
-  PQclear(res);
-
-  return 0;
-}
- 
-
 int pg_save_utx(int txid) {
   PGresult *res;
   ExecStatusType rescode;
@@ -1189,7 +1155,6 @@ struct SERVER_DB_OPS postgresql_db_ops = {
   .add_tx_statics = pg_add_tx_statics,
   .save_blk_tx = pg_save_blk_tx,
   .save_tx = pg_save_tx,
-  .readd_tx = pg_readd_tx,
   .save_utx = pg_save_utx,
   .save_txin = pg_save_txin,
   .save_txout = pg_save_txout,
