@@ -614,7 +614,7 @@ void CTxMemPool::removeForBlock(const std::vector<CTransactionRef>& vtx, unsigne
         if (it != mapTx.end()) {
             setEntries stage;
             stage.insert(it);
-            RemoveStaged(stage, true, MemPoolRemovalReason::BLOCK, true);
+            RemoveStaged(stage, true, MemPoolRemovalReason::BLOCK, false);
         }
         removeConflicts(*tx);
         ClearPrioritisation(tx->GetHash());
