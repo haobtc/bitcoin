@@ -1230,18 +1230,13 @@ bool AppInitMain(boost::thread_group& threadGroup, CScheduler& scheduler)
     // is not yet setup and may end up being set up twice if we
     // need to reindex later.
 
-    uiInterface.InitMessage(_("dbOpen begin..."));
-    if (!dbOpen())
-        return InitError(_("Error connect database fail!"));
-    uiInterface.InitMessage(_("dbOpen end..."));
-
     assert(!g_connman);
     g_connman = std::unique_ptr<CConnman>(new CConnman(GetRand(std::numeric_limits<uint64_t>::max()), GetRand(std::numeric_limits<uint64_t>::max())));
     CConnman& connman = *g_connman;
 
     peerLogic.reset(new PeerLogicValidation(&connman));
     RegisterValidationInterface(peerLogic.get());
-     if  (GetArg("-savetodb", false)) {
+    if  (GetArg("-savetodb", false)) {
         uiInterface.InitMessage(_("dbOpen begin..."));
         if (!dbOpen())
             return InitError(_("Error connect database fail!"));
