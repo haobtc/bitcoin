@@ -61,6 +61,7 @@
 #include <boost/interprocess/sync/file_lock.hpp>
 #include <boost/thread.hpp>
 #include <openssl/crypto.h>
+#include "dblayer.h"
 
 #if ENABLE_ZMQ
 #include "zmq/zmqnotificationinterface.h"
@@ -278,6 +279,8 @@ void Shutdown()
 #endif
     globalVerifyHandle.reset();
     ECC_Stop();
+
+    dbClose();
     LogPrintf("%s: done\n", __func__);
 }
 
@@ -522,6 +525,18 @@ std::string HelpMessage(HelpMessageMode mode)
         strUsage += HelpMessageOpt("-rpcservertimeout=<n>", strprintf("Timeout during HTTP requests (default: %d)", DEFAULT_HTTP_SERVER_TIMEOUT));
     }
 
+    strUsage += "\n" + _("database options:") + "\n";
+    strUsage += "  -savetodb=<true>\n";
+    strUsage += "  -dbname=<database name>\n";
+    strUsage += "  -dbhost=<host>\n";
+    strUsage += "  -dbport=<port>\n";
+    strUsage += "  -dbuser=<username>\n";
+    strUsage += "  -dbpass=<password>\n";
+    strUsage += "  -deleteallutx=<true>\n";
+    strUsage += "  -savemempool=<true>\n";
+    strUsage += "  -filtertx=<true>\n";
+    strUsage += "  -litedb=<false>\n";
+    strUsage += "  -liteheight=<0>\n";
     return strUsage;
 }
 
@@ -695,7 +710,11 @@ void ThreadImport(std::vector<fs::path> vImportFiles)
     }
     } // End scope of CImportingNow
     if (gArgs.GetArg("-persistmempool", DEFAULT_PERSIST_MEMPOOL)) {
+        dbSynMempoolStart();
         LoadMempool();
+        int64_t nStart = GetTimeMicros();
+        dbSynMempoolEnd();
+        LogPrint(BCLog::DBLAYER,"- sync mempool with db: %.2fms\n", (GetTimeMicros() - nStart) * 0.001);
         fDumpMempoolLater = !fRequestShutdown;
     }
 }
@@ -1290,6 +1309,13 @@ bool AppInitMain(boost::thread_group& threadGroup, CScheduler& scheduler)
     peerLogic.reset(new PeerLogicValidation(&connman, scheduler));
     RegisterValidationInterface(peerLogic.get());
 
+    if  (gArgs.GetArg("-savetodb", false)) {
+        uiInterface.InitMessage(_("dbOpen begin..."));
+        if (!dbOpen())
+            return InitError(_("Error connect database fail!"));
+        uiInterface.InitMessage(_("dbOpen end..."));
+        }
+
     // sanitize comments per BIP-0014, format user agent and check total size
     std::vector<std::string> uacomments;
     for (const std::string& cmt : gArgs.GetArgs("-uacomment")) {
@@ -1544,6 +1570,17 @@ bool AppInitMain(boost::thread_group& threadGroup, CScheduler& scheduler)
                         break;
                     }
                 }
+
+                if  (gArgs.GetArg("-savetodb", false)) 
+                    {
+                    uiInterface.InitMessage(_("dbSync begin..."));
+                    if (dbSync(0) == -1) {
+                        strLoadError = _("Error sql database sync...");
+                        break;
+                    }
+                    uiInterface.InitMessage(_("dbSync end..."));
+                    }
+
             } catch (const std::exception& e) {
                 LogPrintf("%s\n", e.what());
                 strLoadError = _("Error opening block database");

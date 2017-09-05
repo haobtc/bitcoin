@@ -2068,7 +2068,9 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         std::vector<uint256> vEraseQueue;
         CTransactionRef ptx;
         vRecv >> ptx;
-        const CTransaction& tx = *ptx;
+        CTransaction tx = *ptx;
+        tx.nTimeReceived = nTimeReceived;
+        tx.relayIp = pfrom->addr.ToString();
 
         CInv inv(MSG_TX, tx.GetHash());
         pfrom->AddInventoryKnown(inv);
@@ -2566,6 +2568,9 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
     {
         std::shared_ptr<CBlock> pblock = std::make_shared<CBlock>();
         vRecv >> *pblock;
+        pblock->nTimeReceived = nTimeReceived;
+        CTransaction *tx = (CTransaction *)pblock->vtx[0].get();
+        tx->nTimeReceived = pblock->nTime;
 
         LogPrint(BCLog::NET, "received block %s peer=%d\n", pblock->GetHash().ToString(), pfrom->GetId());
 
