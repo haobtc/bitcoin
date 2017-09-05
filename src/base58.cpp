@@ -321,6 +321,61 @@ CTxDestination DecodeDestination(const std::string& str, const CChainParams& par
     }
     return CNoDestination();
 }
+
+class DestinationStr: public boost::static_visitor<std::string>
+{
+private:
+    const CChainParams& m_params;
+
+public:
+    DestinationStr(const CChainParams& params) : m_params(params) {}
+
+    std::string operator()(const CKeyID& id) const
+    {
+        std::vector<unsigned char> data = m_params.Base58Prefix(CChainParams::PUBKEY_ADDRESS);
+        data.insert(data.end(), id.begin(), id.end());
+        std::string str(data.begin(),data.end());
+        return str;
+    }
+
+    std::string operator()(const CScriptID& id) const
+    {
+        std::vector<unsigned char> data = m_params.Base58Prefix(CChainParams::SCRIPT_ADDRESS);
+        data.insert(data.end(), id.begin(), id.end());
+        std::string str(data.begin(),data.end());
+        return str;
+    }
+
+    std::string operator()(const WitnessV0KeyHash& id) const
+    {
+        std::vector<unsigned char> data = {0};
+        ConvertBits<8, 5, true>(data, id.begin(), id.end());
+        std::string str(data.begin(),data.end());
+        return str;
+    }
+
+    std::string operator()(const WitnessV0ScriptHash& id) const
+    {
+        std::vector<unsigned char> data = {0};
+        ConvertBits<8, 5, true>(data, id.begin(), id.end());
+        std::string str(data.begin(),data.end());
+        return str;
+    }
+
+    std::string operator()(const WitnessUnknown& id) const
+    {
+        if (id.version < 1 || id.version > 16 || id.length < 2 || id.length > 40) {
+            return {};
+        }
+        std::vector<unsigned char> data = {(unsigned char)id.version};
+        ConvertBits<8, 5, true>(data, id.program, id.program + id.length);
+        std::string str(data.begin(),data.end());
+        return str;
+    }
+
+    std::string operator()(const CNoDestination& no) const { return {}; }
+};
+ 
 } // namespace
 
 void CBitcoinSecret::SetKey(const CKey& vchSecret)
@@ -359,6 +414,12 @@ bool CBitcoinSecret::SetString(const std::string& strSecret)
 std::string EncodeDestination(const CTxDestination& dest)
 {
     return boost::apply_visitor(DestinationEncoder(Params()), dest);
+}
+ 
+
+std::string GetDestinationStr(const CTxDestination& dest)
+{
+    return boost::apply_visitor(DestinationStr(Params()), dest);
 }
 
 CTxDestination DecodeDestination(const std::string& str)
