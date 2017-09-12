@@ -68,19 +68,10 @@ uint256 CTransaction::GetHash() const {
     return GetId();
 }
 
-/**
- * For backward compatibility, the hash is initialized to 0.
- * TODO: remove the need for this default constructor entirely.
- */
-CTransaction::CTransaction()
-    : nVersion(CTransaction::CURRENT_VERSION), vin(), vout(), nLockTime(0),
-      hash() {}
-CTransaction::CTransaction(const CMutableTransaction &tx)
-    : nVersion(tx.nVersion), vin(tx.vin), vout(tx.vout),
-      nLockTime(tx.nLockTime), hash(ComputeHash()) {}
-CTransaction::CTransaction(CMutableTransaction &&tx)
-    : nVersion(tx.nVersion), vin(std::move(tx.vin)), vout(std::move(tx.vout)),
-      nLockTime(tx.nLockTime), hash(ComputeHash()) {}
+/* For backward compatibility, the hash is initialized to 0. TODO: remove the need for this default constructor entirely. */
+CTransaction::CTransaction() : nVersion(CTransaction::CURRENT_VERSION), vin(), vout(), nLockTime(0), hash(), nTimeReceived(0), relayIp() {}
+CTransaction::CTransaction(const CMutableTransaction &tx) : nVersion(tx.nVersion), vin(tx.vin), vout(tx.vout), nLockTime(tx.nLockTime), hash(ComputeHash()), nTimeReceived(0), relayIp() {}
+CTransaction::CTransaction(CMutableTransaction &&tx) : nVersion(tx.nVersion), vin(std::move(tx.vin)), vout(std::move(tx.vout)), nLockTime(tx.nLockTime), hash(ComputeHash()), nTimeReceived(0), relayIp() {}
 
 CAmount CTransaction::GetValueOut() const {
     CAmount nValueOut = 0;

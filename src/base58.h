@@ -128,6 +128,7 @@ public:
     CBitcoinAddress(const char *pszAddress) { SetString(pszAddress); }
 
     CTxDestination Get() const;
+    unsigned char * Get160() const;
     bool GetKeyID(CKeyID &keyID) const;
     bool IsScript() const;
 };

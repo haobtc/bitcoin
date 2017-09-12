@@ -616,19 +616,20 @@ public:
      * updateDescendants to true when removing a tx that was in a block, so that
      * any in-mempool descendants have their ancestor state updated.
      */
-    void
-    RemoveStaged(setEntries &stage, bool updateDescendants,
-                 MemPoolRemovalReason reason = MemPoolRemovalReason::UNKNOWN);
 
-    /**
-     * When adding transactions from a disconnected block back to the mempool,
-     * new mempool entries may have children in the mempool (which is generally
-     * not the case when otherwise adding transactions).
-     * UpdateTransactionsFromBlock() will find child transactions and update the
-     * descendant state for each transaction in hashesToUpdate (excluding any
-     * child transactions present in hashesToUpdate, which are already accounted
-     * for).  Note: hashesToUpdate should be the set of transactions from the
-     * disconnected block that have been accepted back into the mempool.
+    void 
+    RemoveStaged(setEntries &stage, bool updateDescendants, 
+                 MemPoolRemovalReason reason = MemPoolRemovalReason::UNKNOWN, 
+                 bool fRemoveFromDb = false);
+
+    /** When adding transactions from a disconnected block back to the mempool,
+     *  new mempool entries may have children in the mempool (which is generally
+     *  not the case when otherwise adding transactions).
+     *  UpdateTransactionsFromBlock() will find child transactions and update the
+     *  descendant state for each transaction in hashesToUpdate (excluding any
+     *  child transactions present in hashesToUpdate, which are already accounted
+     *  for).  Note: hashesToUpdate should be the set of transactions from the
+     *  disconnected block that have been accepted back into the mempool.
      */
     void
     UpdateTransactionsFromBlock(const std::vector<uint256> &hashesToUpdate);
