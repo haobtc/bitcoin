@@ -19,6 +19,7 @@
 #include "utiltime.h"
 #include "validation.h"
 #include "version.h"
+#include "dblayer.h"
 
 #include <boost/range/adaptor/reversed.hpp>
 
@@ -547,7 +548,7 @@ void CTxMemPool::removeRecursive(const CTransaction &origTx,
             CalculateDescendants(it, setAllRemoves);
         }
 
-        RemoveStaged(setAllRemoves, false, reason);
+        RemoveStaged(setAllRemoves, false, reason, true);
     }
 }
 
@@ -600,7 +601,7 @@ void CTxMemPool::removeForReorg(const CCoinsViewCache *pcoins,
     for (txiter it : txToRemove) {
         CalculateDescendants(it, setAllRemoves);
     }
-    RemoveStaged(setAllRemoves, false, MemPoolRemovalReason::REORG);
+    RemoveStaged(setAllRemoves, false, MemPoolRemovalReason::REORG, true);
 }
 
 void CTxMemPool::removeConflicts(const CTransaction &tx) {
@@ -640,7 +641,7 @@ void CTxMemPool::removeForBlock(const std::vector<CTransactionRef> &vtx,
         if (it != mapTx.end()) {
             setEntries stage;
             stage.insert(it);
-            RemoveStaged(stage, true, MemPoolRemovalReason::BLOCK);
+            RemoveStaged(stage, true, MemPoolRemovalReason::BLOCK, false);
         }
         removeConflicts(*tx);
         ClearPrioritisation(tx->GetId());
@@ -985,6 +986,7 @@ void CTxMemPool::PrioritiseTransaction(const uint256 hash,
                 mapTx.modify(descendantIt,
                              update_ancestor_state(0, nFeeDelta, 0, 0));
             }
+            ++nTransactionsUpdated;
         }
     }
     LogPrintf("PrioritiseTransaction: %s priority += %f, fee += %d\n", strHash,
@@ -1047,11 +1049,12 @@ size_t CTxMemPool::DynamicMemoryUsage() const {
            memusage::DynamicUsage(vTxHashes) + cachedInnerUsage;
 }
 
-void CTxMemPool::RemoveStaged(setEntries &stage, bool updateDescendants,
-                              MemPoolRemovalReason reason) {
+void CTxMemPool::RemoveStaged(setEntries &stage, bool updateDescendants, MemPoolRemovalReason reason, bool fRemoveFromDb) {
     AssertLockHeld(cs);
     UpdateForRemoveFromMempool(stage, updateDescendants);
     for (const txiter &it : stage) {
+        if (fRemoveFromDb)
+            dbRemoveTx(it->GetTx().GetHash()); 
         removeUnchecked(it, reason);
     }
 }
@@ -1069,7 +1072,7 @@ int CTxMemPool::Expire(int64_t time) {
     for (txiter removeit : toremove) {
         CalculateDescendants(removeit, stage);
     }
-    RemoveStaged(stage, false, MemPoolRemovalReason::EXPIRY);
+    RemoveStaged(stage, false, MemPoolRemovalReason::EXPIRY, true);
     return stage.size();
 }
 
@@ -1185,7 +1188,7 @@ void CTxMemPool::TrimToSize(size_t sizelimit,
                 txn.push_back(iter->GetTx());
             }
         }
-        RemoveStaged(stage, false, MemPoolRemovalReason::SIZELIMIT);
+        RemoveStaged(stage, false, MemPoolRemovalReason::SIZELIMIT, true);
         if (pvNoSpendsRemaining) {
             for (const CTransaction &tx : txn) {
                 for (const CTxIn &txin : tx.vin) {

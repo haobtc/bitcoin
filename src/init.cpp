@@ -62,6 +62,7 @@
 #include <boost/interprocess/sync/file_lock.hpp>
 #include <boost/thread.hpp>
 #include <openssl/crypto.h>
+#include "dblayer.h"
 
 #if ENABLE_ZMQ
 #include "zmq/zmqnotificationinterface.h"
@@ -258,6 +259,8 @@ void Shutdown() {
 #endif
     globalVerifyHandle.reset();
     ECC_Stop();
+
+    dbClose();
     LogPrintf("%s: done\n", __func__);
 }
 
@@ -861,6 +864,18 @@ std::string HelpMessage(HelpMessageMode mode) {
                                    "time, seconds since epoch (default: %u)"),
                                  DEFAULT_UAHF_START_TIME));
 
+    strUsage += "\n" + _("database options:") + "\n";
+    strUsage += "  -savetodb=<true>\n";
+    strUsage += "  -dbname=<database name>\n";
+    strUsage += "  -dbhost=<host>\n";
+    strUsage += "  -dbport=<port>\n";
+    strUsage += "  -dbuser=<username>\n";
+    strUsage += "  -dbpass=<password>\n";
+    strUsage += "  -deleteallutx=<true>\n";
+    strUsage += "  -savemempool=<true>\n";
+    strUsage += "  -filtertx=<true>\n";
+    strUsage += "  -litedb=<false>\n";
+    strUsage += "  -liteheight=<0>\n";
     return strUsage;
 }
 
@@ -1041,7 +1056,11 @@ void ThreadImport(const Config &config,
             StartShutdown();
         }
     } // End scope of CImportingNow
+    dbSynMempoolStart();
     LoadMempool(config);
+    int64_t nStart = GetTimeMicros();
+    dbSynMempoolEnd();
+    LogPrint("dblayer", "- sync mempool with db: %.2fms\n", (GetTimeMicros() - nStart) * 0.001);
     fDumpMempoolLater = !fRequestShutdown;
 }
 
@@ -1712,6 +1731,13 @@ bool AppInitMain(Config &config, boost::thread_group &threadGroup,
 
     peerLogic.reset(new PeerLogicValidation(&connman));
     RegisterValidationInterface(peerLogic.get());
+    if  (GetArg("-savetodb", false)) {
+        uiInterface.InitMessage(_("dbOpen begin..."));
+        if (!dbOpen())
+            return InitError(_("Error connect database fail!"));
+        uiInterface.InitMessage(_("dbOpen end..."));
+        }
+ 
     RegisterNodeSignals(GetNodeSignals());
 
     if (mapMultiArgs.count("-onlynet")) {
@@ -2035,7 +2061,18 @@ bool AppInitMain(Config &config, boost::thread_group &threadGroup,
                     strLoadError = _("Corrupted block database detected");
                     break;
                 }
-            } catch (const std::exception &e) {
+
+                if  (GetArg("-savetodb", false)) 
+                    {
+                    uiInterface.InitMessage(_("dbSync begin..."));
+                    if (dbSync(0) == -1) {
+                        strLoadError = _("Error sql database sync...");
+                        break;
+                    }
+                    uiInterface.InitMessage(_("dbSync end..."));
+                    }
+
+            } catch (const std::exception& e) {
                 if (fDebug) LogPrintf("%s\n", e.what());
                 strLoadError = _("Error opening block database");
                 break;

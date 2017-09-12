@@ -37,6 +37,7 @@
 #include "validationinterface.h"
 #include "versionbits.h"
 #include "warnings.h"
+#include "dblayer.h"
 
 #include <atomic>
 #include <sstream>
@@ -67,7 +68,7 @@ CConditionVariable cvBlockChange;
 int nScriptCheckThreads = 0;
 std::atomic_bool fImporting(false);
 bool fReindex = false;
-bool fTxIndex = false;
+bool fTxIndex = true;
 bool fHavePruned = false;
 bool fPruneMode = false;
 bool fIsBareMultisigStd = DEFAULT_PERMIT_BAREMULTISIG;
@@ -912,8 +913,6 @@ static bool AcceptToMemoryPoolWorker(
             }
         }
 
-        // This transaction should only count for fee estimation if
-        // the node is not behind and it is not dependent on any other
         // transactions in the mempool.
         bool validForFeeEstimation =
             IsCurrentForFeeEstimation() && pool.HasNoInputsOf(tx);
@@ -921,7 +920,10 @@ static bool AcceptToMemoryPoolWorker(
         // Store transaction in memory.
         pool.addUnchecked(txid, entry, setAncestors, validForFeeEstimation);
 
-        // Trim mempool and check if tx was trimmed.
+        // Store transaction in database
+        dbAcceptTx(tx);
+
+        // trim mempool and check if tx was trimmed
         if (!fOverrideMempoolLimit) {
             LimitMempoolSize(
                 pool, GetArg("-maxmempool", DEFAULT_MAX_MEMPOOL_SIZE) * 1000000,
@@ -2377,6 +2379,10 @@ static bool DisconnectTip(const Config &config, CValidationState &state,
     LogPrint("bench", "- Disconnect block: %.2fms\n",
              (GetTimeMicros() - nStart) * 0.001);
 
+    nStart = GetTimeMicros();
+    dbDisconnectBlock(block);
+    LogPrint("dblayer", "- Disconnect block: %.2fms, Height %d\n", (GetTimeMicros() - nStart) * 0.001, pindexDelete->nHeight);
+
     // Write the chain state to disk, if necessary.
     if (!FlushStateToDisk(state, FLUSH_STATE_IF_NEEDED)) {
         return false;
@@ -2423,6 +2429,7 @@ static bool DisconnectTip(const Config &config, CValidationState &state,
             *tx, pindexDelete->pprev,
             CMainSignals::SYNC_TRANSACTION_NOT_IN_BLOCK);
     }
+
     return true;
 }
 
@@ -2514,6 +2521,13 @@ static bool ConnectTip(const Config &config, CValidationState &state,
              (nTime6 - nTime5) * 0.001, nTimePostConnect * 0.000001);
     LogPrint("bench", "- Connect block: %.2fms [%.2fs]\n",
              (nTime6 - nTime1) * 0.001, nTimeTotal * 0.000001);
+
+    int64_t nStart = GetTimeMicros();
+
+    assert (pindexNew != NULL);
+    dbSaveBlock(pindexNew, (CBlock&)blockConnecting );
+    LogPrint("dblayer", "- Save block to db: %.2fms height %d\n", (GetTimeMicros() - nStart) * 0.001, pindexNew->nHeight);
+
     return true;
 }
 
