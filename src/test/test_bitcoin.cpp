@@ -22,6 +22,9 @@
 #include "rpc/register.h"
 #include "script/sigcache.h"
 
+#include "dblayer.h"
+#include <boost/test/unit_test.hpp>
+
 #include <memory>
 
 void CConnmanTest::AddNode(CNode& node)
@@ -64,6 +67,7 @@ BasicTestingSetup::~BasicTestingSetup()
 
 TestingSetup::TestingSetup(const std::string& chainName) : BasicTestingSetup(chainName)
 {
+  
     const CChainParams& chainparams = Params();
         // Ideally we'd move all the RPC tests to the functional testing framework
         // instead of unit tests, but for now we need these here.
@@ -80,6 +84,15 @@ TestingSetup::TestingSetup(const std::string& chainName) : BasicTestingSetup(cha
         GetMainSignals().RegisterBackgroundSignalScheduler(scheduler);
 
         mempool.setSanityCheck(1.0);
+        fPrintToConsole = true;
+        fPrintToDebugLog = false;
+        gArgs.ForceSetArg("-savetodb", "1");   
+        gArgs.ForceSetArg("-dbname", "bitcoin");   
+        gArgs.ForceSetArg("-dbuser", "postgres");  
+        gArgs.ForceSetArg("-dbpass", "bitcoin");  
+        gArgs.ForceSetArg("-dbhost", "127.0.0.1"); 
+        gArgs.ForceSetArg("-dbport", "5433");      
+        dbOpen();
         pblocktree = new CBlockTreeDB(1 << 20, true);
         pcoinsdbview = new CCoinsViewDB(1 << 23, true);
         pcoinsTip = new CCoinsViewCache(pcoinsdbview);
@@ -98,6 +111,11 @@ TestingSetup::TestingSetup(const std::string& chainName) : BasicTestingSetup(cha
         g_connman = std::unique_ptr<CConnman>(new CConnman(0x1337, 0x1337)); // Deterministic randomness for tests.
         connman = g_connman.get();
         peerLogic.reset(new PeerLogicValidation(connman, scheduler));
+        if (!dbOpen())
+         {
+         BOOST_ERROR("Error connect database fail!\n");
+         return ;
+         }
 }
 
 TestingSetup::~TestingSetup()
@@ -113,6 +131,7 @@ TestingSetup::~TestingSetup()
         delete pcoinsdbview;
         delete pblocktree;
         fs::remove_all(pathTemp);
+        dbClose();
 }
 
 TestChain100Setup::TestChain100Setup() : TestingSetup(CBaseChainParams::REGTEST)
