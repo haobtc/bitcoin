@@ -16,6 +16,7 @@
 #include <rpc/server.h>
 #include <rpc/register.h>
 #include <script/sigcache.h>
+#include "dblayer.h"
 
 #include <memory>
 
@@ -59,6 +60,12 @@ BasicTestingSetup::~BasicTestingSetup()
 
 TestingSetup::TestingSetup(const std::string& chainName) : BasicTestingSetup(chainName)
 {
+    if (!dbOpen())
+      {
+      throw std::runtime_error("Error connect database fail!");
+      return ;
+      }
+
     const CChainParams& chainparams = Params();
         // Ideally we'd move all the RPC tests to the functional testing framework
         // instead of unit tests, but for now we need these here.
@@ -108,6 +115,8 @@ TestingSetup::~TestingSetup()
         pcoinsdbview.reset();
         pblocktree.reset();
         fs::remove_all(pathTemp);
+        dbClose();
+ 
 }
 
 TestChain100Setup::TestChain100Setup() : TestingSetup(CBaseChainParams::REGTEST)

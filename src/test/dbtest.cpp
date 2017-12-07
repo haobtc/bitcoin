@@ -25,6 +25,15 @@
 #include <map>
 #include <string>
 
+#include "validation.h"
+#include "miner.h"
+#include "pubkey.h"
+#include "txmempool.h"
+#include "random.h"
+#include "test/test_bitcoin.h"
+#include "utiltime.h"
+ 
+
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/assign/list_of.hpp>
@@ -120,54 +129,120 @@ BOOST_AUTO_TEST_CASE(test_poolinfo)
   CMutableTransaction mtx;
   const std::string  stx= "00000000000000000000000000000000000000000000000000000000000000000000000001ffffffff6403410407362f454232352f414432332f384d2f22afdca2e562b434edb3c8d67a81d930cce97687c6fae97b7248889296341c7602000000f09f909f134d696e65642062792077696e6a69616e6a756e00000000000000000000000000000000000000000098e2719c0232be3a56000000001976a914c825a1ecf2a6830c4401620c3a16f1995057c2ab88ac00000000000000002f6a24aa21a9eddac81849576b43344bbfb311730a70a394d7217aa2278c3a3bec04b0a68ac5280800000000000000004f254a3c";
 
-  const std::string  coinbase= "03410407362f454232352f414432332f384d2f22afdca2e562b434edb3c8d67a81d930cce97687c6fae97b7248889296341c7602000000f09f909f134d696e65642062792077696e6a69616e6a756e000000000000000000000000000000000000000000";
+  std::vector<unsigned char>   coinbase= ParseHex("03410407362f454232352f414432332f384d2f22afdca2e562b434edb3c8d67a81d930cce97687c6fae97b7248889296341c7602000000f09f909f134d696e65642062792077696e6a69616e6a756e000000000000000000000000000000000000000000");
 
   const std::string  addr = "1F1xcRt8H8Wa623KqmkEontwAAVqDSAWCV";
   int id = 0;
 
-  id = getPoolIdByPrefix((const unsigned char*)coinbase.c_str(), coinbase.size());
-  BOOST_CHECK(id == POOL_1HASH);
-  printf("id=%d, 1hash=%d", id, POOL_1HASH);
+  //id = getPoolIdByPrefix((const unsigned char*)coinbase.data(), coinbase.size());
+  //BOOST_CHECK(id == POOL_1HASH);
+  //printf("id=%d, 1hash=%d", id, POOL_1HASH);
 
   id = getPoolIdByAddr((const char*)addr.c_str());
   BOOST_CHECK(id == POOL_1HASH);
   printf("id=%d, 1hash=%d", id, POOL_1HASH);
 
-  if (!DecodeHexTx(mtx, stx, true))
-        BOOST_ERROR("TX decode failed");
+  //if (!DecodeHexTx(mtx, stx, true))
+  //      BOOST_ERROR("TX decode failed");
 
-  CTransaction tx = CTransaction(std::move(mtx));                                                                                                           
+  //CTransaction tx = CTransaction(std::move(mtx));                                                                                                           
 
-  getPoolId(tx);
+  //getPoolId(tx);
 
 }
 
-BOOST_AUTO_TEST_CASE(test_poolbip)
+//BOOST_AUTO_TEST_CASE(test_poolbip)
+//{
+//    std::vector<unsigned char>   coinbase= ParseHex("03410407362f454232352f414432332f384d2f22afdca2e562b434edb3c8d67a81d930cce97687c6fae97b7248889296341c7602000000f09f909f134d696e65642062792077696e6a69616e6a756e000000000000000000000000000000000000000000");
+//
+//  std::vector<unsigned char>  bucoinbase= ParseHex("03e30707244d696e656420627920416e74506f6f6c20626a31352f4542312f4144362f422058e73996fabe6d6de96c37208654a8142735f2c2ef61afea04e414d8f2e980817448927a93639e1704000000000000002e000000aa7f0100");
+//
+//  int poolBip = 0;
+//
+//  //  if (version == 0x20000000)
+//  //      ver &= BIP_9;
+//  //  if (version == 0x20000001)
+//  //      ver &= BIP_CSV;
+//  //  if (version == 0x20000002)
+//  //      ver &= BIP_SW;
+//  //  if (version == 0x20000004)
+//  //      ver &= BIP_101_8M;
+//  //  if (version == 0x20000008)
+//  //      ver &= BIP_101_2M;
+//  //  if ((version & 0x30000000) == 0x30000000)
+//  //      ver &= BIP_CLASSIC;
+// 
+//  poolBip = getPoolSupportBip((const unsigned char*)&coinbase[0], coinbase.size(), 0x20000002);
+//  BOOST_CHECK(poolBip  == BIP_SW);
+//  printf("poolBip=%d, BIP_BU=%d", poolBip, BIP_SW);
+//
+//  poolBip = getPoolSupportBip((const unsigned char*)&bucoinbase[0], bucoinbase.size(), 0x20000000);
+//  BOOST_CHECK(poolBip  == BIP_BU);
+//  printf("poolBip=%d, BIP_BU=%d", poolBip, BIP_BU);
+//}
+
+BOOST_AUTO_TEST_SUITE_END() 
+BOOST_AUTO_TEST_SUITE(sw_tests)
+BOOST_FIXTURE_TEST_CASE(check_segwit_address, TestChain100Setup)
 {
-    std::vector<unsigned char>   coinbase= ParseHex("03410407362f454232352f414432332f384d2f22afdca2e562b434edb3c8d67a81d930cce97687c6fae97b7248889296341c7602000000f09f909f134d696e65642062792077696e6a69616e6a756e000000000000000000000000000000000000000000");
+    // Test that passing CheckInputs with one set of script flags doesn't imply
+    // that we would pass again with a different set of flags.
+    {
+        LOCK(cs_main);
+        InitScriptExecutionCache();
+    }
 
-  std::vector<unsigned char>  bucoinbase= ParseHex("03e30707244d696e656420627920416e74506f6f6c20626a31352f4542312f4144362f422058e73996fabe6d6de96c37208654a8142735f2c2ef61afea04e414d8f2e980817448927a93639e1704000000000000002e000000aa7f0100");
+    //hex
+    //01000000000101cee8516504a650ac9b729d2459c879fa67c1fb5eda02a005d8ef5ba35dbeed340100000000ffffffff0300c2eb0b000000001976a9142eda4d206bdc8f7f612a07d84d5f835531a1a59588ac80969800000000001976a9149dd2672a5956945375b214a28ed58b2a099e120188ac0066781700000000220020701a8d401c84fb13e6baf169d59684e17abd9fa216c8cc5b9fc63d622ff8c58d0400483045022100a8a4f9980d0426c7bb3d1c8431707c73511361de03d9d8d841fa80dd58f26ece02201ea4ebfa87f8f3862b333e3c1a4cf1ed47356b9c4fc2eb74bbc45f4ac15e8e7801473044022034185008cc7b73f73f828552b00c88b493ac7c3bcc85858feffe2f2a3ac03cfd02205af9836c3f6d12a6fa06f86f384c7f49c67bbdb130def4f5e61e3a0525b00b3e016952210375e00eb72e29da82b89367947f29ef34afb75e8654f6ea368e0acdfd92976b7c2103a1b26313f430c4b15bb1fdce663207659d8cac749a0e53d70eff01874496feff2103c96d495bfdd5ba4145e3e046fee45e84a8a48ad05bd8dbb395c011a32cf9f88053ae00000000
+    //
+    //string raw_tx = "01000000000101cee8516504a650ac9b729d2459c879fa67c1fb5eda02a005d8ef5ba35dbeed340100000000ffffffff0300c2eb0b000000001976a9142eda4d206bdc8f7f612a07d84d5f835531a1a59588ac80969800000000001976a9149dd2672a5956945375b214a28ed58b2a099e120188ac0066781700000000220020701a8d401c84fb13e6baf169d59684e17abd9fa216c8cc5b9fc63d622ff8c58d0400483045022100a8a4f9980d0426c7bb3d1c8431707c73511361de03d9d8d841fa80dd58f26ece02201ea4ebfa87f8f3862b333e3c1a4cf1ed47356b9c4fc2eb74bbc45f4ac15e8e7801473044022034185008cc7b73f73f828552b00c88b493ac7c3bcc85858feffe2f2a3ac03cfd02205af9836c3f6d12a6fa06f86f384c7f49c67bbdb130def4f5e61e3a0525b00b3e016952210375e00eb72e29da82b89367947f29ef34afb75e8654f6ea368e0acdfd92976b7c2103a1b26313f430c4b15bb1fdce663207659d8cac749a0e53d70eff01874496feff2103c96d495bfdd5ba4145e3e046fee45e84a8a48ad05bd8dbb395c011a32cf9f88053ae00000000";
+    
+    //CDataStream stream(ParseHex(raw_tx), SER_NETWORK, PROTOCOL_VERSION);
+    //CTransaction pre_tx(deserialize, stream);
+    //stream >> tx;
 
-  int poolBip = 0;
+    CScript p2pk_scriptPubKey = CScript() << ToByteVector(coinbaseKey.GetPubKey()) << OP_CHECKSIG;
+    CScript p2sh_scriptPubKey = GetScriptForDestination(CScriptID(p2pk_scriptPubKey));
+    CScript p2pkh_scriptPubKey = GetScriptForDestination(coinbaseKey.GetPubKey().GetID());
+    CScript p2wpkh_scriptPubKey = GetScriptForWitness(p2pkh_scriptPubKey);
 
-  //  if (version == 0x20000000)
-  //      ver &= BIP_9;
-  //  if (version == 0x20000001)
-  //      ver &= BIP_CSV;
-  //  if (version == 0x20000002)
-  //      ver &= BIP_SW;
-  //  if (version == 0x20000004)
-  //      ver &= BIP_101_8M;
-  //  if (version == 0x20000008)
-  //      ver &= BIP_101_2M;
-  //  if ((version & 0x30000000) == 0x30000000)
-  //      ver &= BIP_CLASSIC;
- 
-  poolBip = getPoolSupportBip((const unsigned char*)&coinbase[0], coinbase.size(), 0x20000002);
-  BOOST_CHECK(poolBip  == BIP_SW);
+    CBasicKeyStore keystore;
+    keystore.AddKey(coinbaseKey);
+    keystore.AddCScript(p2pk_scriptPubKey);
 
-  poolBip = getPoolSupportBip((const unsigned char*)&bucoinbase[0], bucoinbase.size(), 0x20000000);
-  BOOST_CHECK(poolBip  == BIP_BU);
+    // flags to test: SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY, SCRIPT_VERIFY_CHECKSEQUENCE_VERIFY, SCRIPT_VERIFY_NULLDUMMY, uncompressed pubkey thing
+
+    // Create 2 outputs that match the three scripts above, spending the first
+    // coinbase tx.
+    CMutableTransaction spend_tx;
+
+    spend_tx.nVersion = 1;
+    spend_tx.vin.resize(1);
+    spend_tx.vin[0].prevout.hash = coinbaseTxns[0].GetHash();
+    spend_tx.vin[0].prevout.n = 0;
+    spend_tx.vout.resize(4);
+    spend_tx.vout[0].nValue = 11*CENT;
+    spend_tx.vout[0].scriptPubKey = p2sh_scriptPubKey;
+    spend_tx.vout[1].nValue = 11*CENT;
+    spend_tx.vout[1].scriptPubKey = p2wpkh_scriptPubKey;
+    spend_tx.vout[2].nValue = 11*CENT;
+    spend_tx.vout[2].scriptPubKey = CScript() << OP_CHECKLOCKTIMEVERIFY << OP_DROP << ToByteVector(coinbaseKey.GetPubKey()) << OP_CHECKSIG;
+    spend_tx.vout[3].nValue = 11*CENT;
+    spend_tx.vout[3].scriptPubKey = CScript() << OP_CHECKSEQUENCEVERIFY << OP_DROP << ToByteVector(coinbaseKey.GetPubKey()) << OP_CHECKSIG;
+
+    // Sign, with a non-DER signature
+    {
+        std::vector<unsigned char> vchSig;
+        uint256 hash = SignatureHash(p2pk_scriptPubKey, spend_tx, 0, SIGHASH_ALL, 0, SIGVERSION_BASE);
+        BOOST_CHECK(coinbaseKey.Sign(hash, vchSig));
+        vchSig.push_back((unsigned char) 0); // padding byte makes this non-DER
+        vchSig.push_back((unsigned char)SIGHASH_ALL);
+        spend_tx.vin[0].scriptSig << vchSig;
+    }
+
+    dbSaveTx(spend_tx);
+
 }
+ 
 
 BOOST_AUTO_TEST_SUITE_END() 
